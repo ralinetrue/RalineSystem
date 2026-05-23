@@ -1,0 +1,428 @@
+--====================================================
+-- RALINE FREE CAMERA SYSTEM
+-- FINAL CLEAN BUILD + TAP TAP + SHORTCUT T
+--====================================================
+
+local Rayfield = loadstring(game:HttpGet(
+    "https://sirius.menu/rayfield"
+))()
+
+--====================================================
+-- SERVICES
+--====================================================
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
+local Lighting = game:GetService("Lighting")
+local VIM = game:GetService("VirtualInputManager")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+--====================================================
+-- WINDOW
+--====================================================
+
+local Window = Rayfield:CreateWindow({
+    Name = "Raline Is Good",
+    LoadingTitle = "Raline System",
+    LoadingSubtitle = "Sharingan Camera",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "RalineSystem",
+        FileName = "RalineConfig"
+    },
+    Discord = { Enabled = false },
+    KeySystem = false
+})
+
+--====================================================
+-- TAB
+--====================================================
+
+local MainTab = Window:CreateTab("Raline is good", 4483362458)
+local TapTab = Window:CreateTab("Tap Tap", 4483362458)
+
+--====================================================
+-- VARIABLES
+--====================================================
+
+local SelectedPlayer = nil
+
+local FreecamEnabled = false
+local FreecamConnection = nil
+local FreecamToggle = nil
+
+local CameraPosition = nil
+local TargetPosition = nil
+
+local MoveForward = 0
+local MoveSide = 0
+local MoveVertical = 0
+
+local CameraYaw = 0
+local CameraPitch = 0
+
+local CameraSpeed = 3
+
+local SavedCFrame = nil
+
+-- TAP TAP
+local TapTapEnabled = false
+local TapTapConnection = nil
+local TapTapPosition = nil
+
+--====================================================
+-- VISUAL
+--====================================================
+
+Lighting.GlobalShadows = true
+Lighting.Brightness = 2
+
+--====================================================
+-- NOTIFY
+--====================================================
+
+Rayfield:Notify({
+    Title = "Raline System",
+    Content = "Loaded Successfully",
+    Duration = 5
+})
+
+--====================================================
+-- SELECT PLAYER
+--====================================================
+
+MainTab:CreateInput({
+    Name = "Select Player",
+    PlaceholderText = "Enter Username",
+    RemoveTextAfterFocusLost = false,
+
+    Callback = function(Text)
+        SelectedPlayer = Players:FindFirstChild(Text)
+
+        if SelectedPlayer then
+            Rayfield:Notify({
+                Title = "Player Selected",
+                Content = SelectedPlayer.Name,
+                Duration = 3
+            })
+        else
+            Rayfield:Notify({
+                Title = "Player Not Found",
+                Content = Text,
+                Duration = 3
+            })
+        end
+    end
+})
+
+--====================================================
+-- TELEPORT PLAYER
+--====================================================
+
+MainTab:CreateButton({
+    Name = "Teleport To Player",
+    Callback = function()
+        if SelectedPlayer and SelectedPlayer.Character and LocalPlayer.Character then
+            LocalPlayer.Character:PivotTo(
+                SelectedPlayer.Character:GetPivot()
+            )
+
+            Rayfield:Notify({
+                Title = "Teleported",
+                Content = SelectedPlayer.Name,
+                Duration = 3
+            })
+        end
+    end
+})
+
+--====================================================
+-- CAMERA SPEED
+--====================================================
+
+MainTab:CreateSlider({
+    Name = "Camera Speed",
+    Range = {1,5},
+    Increment = 1,
+    Suffix = "Level",
+    CurrentValue = 3,
+    Callback = function(Value)
+        CameraSpeed = Value
+    end
+})
+
+--====================================================
+-- FREECAM FUNCTIONS
+--====================================================
+
+local function EnableFreecam()
+    if FreecamEnabled then return end
+    FreecamEnabled = true
+
+    local Character = LocalPlayer.Character
+
+    if Character then
+        local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+        local Humanoid = Character:FindFirstChild("Humanoid")
+
+        if HumanoidRootPart then
+            SavedCFrame = HumanoidRootPart.CFrame
+        end
+
+        if Humanoid then
+            Humanoid.WalkSpeed = 0
+            Humanoid.JumpPower = 0
+            Humanoid.AutoRotate = false
+        end
+    end
+
+    Camera.CameraType = Enum.CameraType.Scriptable
+    UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+
+    CameraPosition = Camera.CFrame.Position
+    TargetPosition = Camera.CFrame.Position
+
+    local _, Yaw, _ = Camera.CFrame:ToOrientation()
+    CameraYaw = math.deg(Yaw)
+    CameraPitch = 0
+
+    FreecamConnection = RunService.RenderStepped:Connect(function(Delta)
+
+        local Character = LocalPlayer.Character
+
+        if Character and Character:FindFirstChild("HumanoidRootPart") and SavedCFrame then
+            Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+            Character.HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+            Character.HumanoidRootPart.CFrame = SavedCFrame
+        end
+
+        local MouseDelta = UIS:GetMouseDelta()
+
+        CameraYaw -= MouseDelta.X * 0.25
+        CameraPitch = math.clamp(CameraPitch - MouseDelta.Y * 0.25, -89, 89)
+
+        local Rotation = CFrame.fromOrientation(
+            math.rad(CameraPitch),
+            math.rad(CameraYaw),
+            0
+        )
+
+        local Direction = Vector3.zero
+        Direction += Rotation.LookVector * MoveForward
+        Direction += Rotation.RightVector * MoveSide
+        Direction += Vector3.new(0,1,0) * MoveVertical
+
+        local Speed = CameraSpeed * 16
+
+        TargetPosition += Direction * Speed * Delta
+        CameraPosition = CameraPosition:Lerp(TargetPosition, 0.20)
+
+        local SmoothCFrame = CFrame.new(CameraPosition) * Rotation
+
+        Camera.CFrame = Camera.CFrame:Lerp(SmoothCFrame, 0.22)
+    end)
+
+    Rayfield:Notify({
+        Title = "Free Camera",
+        Content = "Enabled",
+        Duration = 2
+    })
+end
+
+local function DisableFreecam()
+    if not FreecamEnabled then return end
+    FreecamEnabled = false
+
+    if FreecamConnection then
+        FreecamConnection:Disconnect()
+        FreecamConnection = nil
+    end
+
+    UIS.MouseBehavior = Enum.MouseBehavior.Default
+    Camera.CameraType = Enum.CameraType.Custom
+
+    local Character = LocalPlayer.Character
+    if Character then
+        local Humanoid = Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Humanoid.WalkSpeed = 16
+            Humanoid.JumpPower = 50
+            Humanoid.AutoRotate = true
+            Camera.CameraSubject = Humanoid
+        end
+    end
+
+    Rayfield:Notify({
+        Title = "Free Camera",
+        Content = "Disabled",
+        Duration = 2
+    })
+end
+
+--====================================================
+-- INPUT MOVEMENT
+--====================================================
+
+UIS.InputBegan:Connect(function(Input, GPE)
+    if GPE then return end
+
+    -- FREECAM MOVE
+    if Input.KeyCode == Enum.KeyCode.W then MoveForward = 1 end
+    if Input.KeyCode == Enum.KeyCode.S then MoveForward = -1 end
+    if Input.KeyCode == Enum.KeyCode.A then MoveSide = -1 end
+    if Input.KeyCode == Enum.KeyCode.D then MoveSide = 1 end
+    if Input.KeyCode == Enum.KeyCode.Q then MoveVertical = -1 end
+    if Input.KeyCode == Enum.KeyCode.E then MoveVertical = 1 end
+
+    -- FREECAM TOGGLE F
+    if Input.KeyCode == Enum.KeyCode.F then
+        if FreecamEnabled then
+            DisableFreecam()
+            if FreecamToggle then FreecamToggle:Set(false) end
+        else
+            EnableFreecam()
+            if FreecamToggle then FreecamToggle:Set(true) end
+        end
+    end
+
+    --====================================================
+    -- 🔥 TAP TAP SHORTCUT (T)
+    --====================================================
+    if Input.KeyCode == Enum.KeyCode.T then
+
+        TapTapEnabled = not TapTapEnabled
+
+        if TapTapEnabled then
+
+            if not TapTapPosition then
+                Rayfield:Notify({
+                    Title = "Tap Tap",
+                    Content = "Select Position First",
+                    Duration = 3
+                })
+                TapTapEnabled = false
+                return
+            end
+
+            if not TapTapConnection then
+                TapTapConnection = RunService.RenderStepped:Connect(function()
+                    VIM:SendMouseButtonEvent(TapTapPosition.X, TapTapPosition.Y, 0, true, game, 1)
+                    VIM:SendMouseButtonEvent(TapTapPosition.X, TapTapPosition.Y, 0, false, game, 1)
+                end)
+            end
+
+            Rayfield:Notify({
+                Title = "Tap Tap",
+                Content = "Enabled (T)",
+                Duration = 2
+            })
+
+        else
+
+            if TapTapConnection then
+                TapTapConnection:Disconnect()
+                TapTapConnection = nil
+            end
+
+            Rayfield:Notify({
+                Title = "Tap Tap",
+                Content = "Disabled (T)",
+                Duration = 2
+            })
+        end
+    end
+end)
+
+UIS.InputEnded:Connect(function(Input)
+    if Input.KeyCode == Enum.KeyCode.W or Input.KeyCode == Enum.KeyCode.S then MoveForward = 0 end
+    if Input.KeyCode == Enum.KeyCode.A or Input.KeyCode == Enum.KeyCode.D then MoveSide = 0 end
+    if Input.KeyCode == Enum.KeyCode.Q or Input.KeyCode == Enum.KeyCode.E then MoveVertical = 0 end
+end)
+
+--====================================================
+-- FREECAM TOGGLE UI
+--====================================================
+
+FreecamToggle = MainTab:CreateToggle({
+    Name = "Free Camera",
+    CurrentValue = false,
+    Callback = function(Value)
+        if Value then EnableFreecam() else DisableFreecam() end
+    end
+})
+
+--====================================================
+-- TAP POSITION
+--====================================================
+
+TapTab:CreateButton({
+    Name = "Select Tap Position",
+    Callback = function()
+
+        Rayfield:Notify({
+            Title = "Tap Tap",
+            Content = "Click Screen To Save Position",
+            Duration = 3
+        })
+
+        local Connection
+        Connection = UIS.InputBegan:Connect(function(Input, GPE)
+            if GPE then return end
+
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                TapTapPosition = UIS:GetMouseLocation()
+
+                Rayfield:Notify({
+                    Title = "Tap Tap",
+                    Content = "Position Saved",
+                    Duration = 3
+                })
+
+                Connection:Disconnect()
+            end
+        end)
+    end
+})
+
+--====================================================
+-- TAP TAP TOGGLE UI
+--====================================================
+
+TapTab:CreateToggle({
+    Name = "Tap Tap",
+    CurrentValue = false,
+    Callback = function(Value)
+
+        TapTapEnabled = Value
+
+        if Value then
+            if not TapTapPosition then
+                Rayfield:Notify({
+                    Title = "Tap Tap",
+                    Content = "Select Position First",
+                    Duration = 3
+                })
+                return
+            end
+
+            TapTapConnection = RunService.RenderStepped:Connect(function()
+                VIM:SendMouseButtonEvent(TapTapPosition.X, TapTapPosition.Y, 0, true, game, 1)
+                VIM:SendMouseButtonEvent(TapTapPosition.X, TapTapPosition.Y, 0, false, game, 1)
+            end)
+
+        else
+            if TapTapConnection then
+                TapTapConnection:Disconnect()
+                TapTapConnection = nil
+            end
+        end
+    end
+})
+
+--====================================================
+-- END
+--====================================================
