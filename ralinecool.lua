@@ -4,12 +4,13 @@
 ✔ Speed Fixed
 ✔ Jump Fixed
 ✔ Reverse Walk Shiftlock Style
-✔ Auto Heal Full Every 1s
 ✔ ESP Fixed
 ✔ Crosshair Fixed
 ✔ Optimized & Stable
 ✔ Teleport Removed
 ✔ Credits Removed
+✔ Auto Heal Removed
+✔ Resistance Removed
 
 ]]
 
@@ -84,9 +85,6 @@ local State = {
     InfiniteJump = false,
     Noclip = false,
     ReverseWalk = false,
-    AutoHeal = false,
-
-    Resistance = 10,
 
     Visual = {
         Crosshair = false,
@@ -269,34 +267,6 @@ PlayerTab:CreateToggle({
             hum.AutoRotate = true
             Notify("Reverse Walk", "Disabled")
         end
-    end,
-})
-
--------------------------------------------------
--- AUTO HEAL
--------------------------------------------------
-
-PlayerTab:CreateToggle({
-    Name = "❤️ Auto Heal",
-    CurrentValue = false,
-    Callback = function(v)
-        State.AutoHeal = v
-    end,
-})
-
--------------------------------------------------
--- RESISTANCE
--------------------------------------------------
-
-PlayerTab:CreateSection("🛡 Resistance")
-
-PlayerTab:CreateSlider({
-    Name = "Resistance Value",
-    Range = {10,100},
-    Increment = 1,
-    CurrentValue = 10,
-    Callback = function(v)
-        State.Resistance = v
     end,
 })
 
@@ -541,30 +511,6 @@ for _,plr in ipairs(Players:GetPlayers()) do
 end
 
 Players.PlayerAdded:Connect(CreateESP)
-
--------------------------------------------------
--- AUTO HEAL LOOP
--------------------------------------------------
-
-task.spawn(function()
-
-    while true do
-
-        task.wait(1)
-
-        if State.AutoHeal then
-
-            local hum = Humanoid()
-
-            if hum.Health < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
-
-        end
-
-    end
-
-end)
 
 -------------------------------------------------
 -- MAIN LOOP
