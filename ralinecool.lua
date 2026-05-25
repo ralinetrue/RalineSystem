@@ -1,16 +1,17 @@
 --[[
 
-🧠 RALINE UI SYSTEM (LIGHTWEIGHT FINAL VERSION)
-✔ Speed Fixed
-✔ Jump Fixed
-✔ Reverse Walk Shiftlock Style
-✔ ESP Fixed
-✔ Crosshair Fixed
-✔ Optimized & Stable
-✔ Teleport Removed
-✔ Credits Removed
-✔ Auto Heal Removed
-✔ Resistance Removed
+🧠 RALINE UI SYSTEM (FULL IMPROVED)
+✔ More Faster
+✔ More Lightweight
+✔ Better Stability
+✔ Optimized Render
+✔ Better ESP
+✔ Better Crosshair
+✔ Stable Reverse Walk
+✔ Better Hide Players
+✔ God Mode
+✔ FX Optimizer
+✔ Cleaned System
 
 ]]
 
@@ -33,28 +34,30 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
-local function Character()
-    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-end
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local Root = Character:WaitForChild("HumanoidRootPart")
 
-local function Humanoid()
-    return Character():WaitForChild("Humanoid")
-end
+LocalPlayer.CharacterAdded:Connect(function(char)
 
-local function Root()
-    return Character():WaitForChild("HumanoidRootPart")
-end
+    Character = char
+    Humanoid = char:WaitForChild("Humanoid")
+    Root = char:WaitForChild("HumanoidRootPart")
+
+end)
 
 -------------------------------------------------
 -- RAYFIELD
 -------------------------------------------------
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Rayfield = loadstring(
+    game:HttpGet("https://sirius.menu/rayfield")
+)()
 
 local Window = Rayfield:CreateWindow({
     Name = "👑 Raline UI System",
     LoadingTitle = "Raline UI",
-    LoadingSubtitle = "Lightweight Final Version",
+    LoadingSubtitle = "Full Improved",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "RalineUI",
@@ -85,6 +88,7 @@ local State = {
     InfiniteJump = false,
     Noclip = false,
     ReverseWalk = false,
+    GodMode = false,
 
     Visual = {
         Crosshair = false,
@@ -108,11 +112,13 @@ local State = {
 -------------------------------------------------
 
 local function Notify(title, text)
+
     Rayfield:Notify({
         Title = title,
         Content = text,
         Duration = 4,
     })
+
 end
 
 -------------------------------------------------
@@ -131,21 +137,32 @@ HomeTab:CreateParagraph({
 HomeTab:CreateLabel("Username : "..LocalPlayer.Name)
 
 local device = UIS.TouchEnabled and "Mobile" or "PC"
+
 HomeTab:CreateLabel("Device : "..device)
 
 local FPSLabel = HomeTab:CreateLabel("FPS : 0")
 local PingLabel = HomeTab:CreateLabel("Ping : 0")
 
-RunService.RenderStepped:Connect(function(dt)
+task.spawn(function()
 
-    FPSLabel:Set("FPS : "..math.floor(1/dt))
+    while task.wait(1) do
 
-    pcall(function()
-        PingLabel:Set("Ping : "..math.floor(
-            Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-        ).."ms")
-    end)
+        FPSLabel:Set(
+            "FPS : "..math.floor(
+                Workspace:GetRealPhysicsFPS()
+            )
+        )
 
+        pcall(function()
+
+            PingLabel:Set(
+                "Ping : "..math.floor(
+                    Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+                ).."ms"
+            )
+
+        end)
+    end
 end)
 
 HomeTab:CreateButton({
@@ -177,6 +194,7 @@ PlayerTab:CreateSection("🏃 Speed")
 PlayerTab:CreateToggle({
     Name = "Enable Speed",
     CurrentValue = false,
+
     Callback = function(v)
         State.Speed.Enabled = v
     end,
@@ -187,6 +205,7 @@ PlayerTab:CreateSlider({
     Range = {17,45},
     Increment = 1,
     CurrentValue = 17,
+
     Callback = function(v)
         State.Speed.Value = v
     end,
@@ -201,6 +220,7 @@ PlayerTab:CreateSection("🦘 Jump")
 PlayerTab:CreateToggle({
     Name = "Enable Jump",
     CurrentValue = false,
+
     Callback = function(v)
         State.Jump.Enabled = v
     end,
@@ -211,6 +231,7 @@ PlayerTab:CreateSlider({
     Range = {51,65},
     Increment = 1,
     CurrentValue = 51,
+
     Callback = function(v)
         State.Jump.Value = v
     end,
@@ -223,6 +244,7 @@ PlayerTab:CreateSlider({
 PlayerTab:CreateToggle({
     Name = "♾ Infinite Jump",
     CurrentValue = false,
+
     Callback = function(v)
         State.InfiniteJump = v
     end,
@@ -230,10 +252,13 @@ PlayerTab:CreateToggle({
 
 UIS.JumpRequest:Connect(function()
 
-    if State.InfiniteJump then
-        Humanoid():ChangeState(Enum.HumanoidStateType.Jumping)
-    end
+    if State.InfiniteJump and Humanoid then
 
+        Humanoid:ChangeState(
+            Enum.HumanoidStateType.Jumping
+        )
+
+    end
 end)
 
 -------------------------------------------------
@@ -243,8 +268,28 @@ end)
 PlayerTab:CreateToggle({
     Name = "👻 Noclip",
     CurrentValue = false,
+
     Callback = function(v)
         State.Noclip = v
+    end,
+})
+
+-------------------------------------------------
+-- GOD MODE
+-------------------------------------------------
+
+PlayerTab:CreateToggle({
+    Name = "🛡 God Mode",
+    CurrentValue = false,
+
+    Callback = function(v)
+
+        State.GodMode = v
+
+        Notify(
+            "God Mode",
+            v and "Enabled" or "Disabled"
+        )
     end,
 })
 
@@ -255,18 +300,17 @@ PlayerTab:CreateToggle({
 PlayerTab:CreateToggle({
     Name = "🔄 Reverse Walk",
     CurrentValue = false,
+
     Callback = function(v)
+
         State.ReverseWalk = v
 
-        local hum = Humanoid()
+        Humanoid.AutoRotate = not v
 
-        if v then
-            hum.AutoRotate = false
-            Notify("Reverse Walk", "Enabled")
-        else
-            hum.AutoRotate = true
-            Notify("Reverse Walk", "Disabled")
-        end
+        Notify(
+            "Reverse Walk",
+            v and "Enabled" or "Disabled"
+        )
     end,
 })
 
@@ -285,6 +329,7 @@ VisualTab:CreateSection("📦 ESP")
 VisualTab:CreateToggle({
     Name = "Box ESP",
     CurrentValue = false,
+
     Callback = function(v)
         State.ESP.Box = v
     end,
@@ -293,6 +338,7 @@ VisualTab:CreateToggle({
 VisualTab:CreateToggle({
     Name = "Name ESP",
     CurrentValue = false,
+
     Callback = function(v)
         State.ESP.Names = v
     end,
@@ -301,6 +347,7 @@ VisualTab:CreateToggle({
 VisualTab:CreateToggle({
     Name = "Distance ESP",
     CurrentValue = false,
+
     Callback = function(v)
         State.ESP.Distance = v
     end,
@@ -313,6 +360,7 @@ VisualTab:CreateToggle({
 VisualTab:CreateToggle({
     Name = "✚ Crosshair",
     CurrentValue = false,
+
     Callback = function(v)
         State.Visual.Crosshair = v
     end,
@@ -325,8 +373,18 @@ VisualTab:CreateToggle({
 VisualTab:CreateToggle({
     Name = "💡 Fullbright",
     CurrentValue = false,
+
     Callback = function(v)
+
         State.Visual.Fullbright = v
+
+        if not v then
+
+            Lighting.Brightness = 1
+            Lighting.ClockTime = 12
+            Lighting.Ambient = Color3.fromRGB(128,128,128)
+
+        end
     end,
 })
 
@@ -335,6 +393,7 @@ VisualTab:CreateSlider({
     Range = {1,10},
     Increment = 1,
     CurrentValue = 5,
+
     Callback = function(v)
         State.Visual.Brightness = v
     end,
@@ -344,11 +403,53 @@ VisualTab:CreateSlider({
 -- HIDE PLAYERS
 -------------------------------------------------
 
+local function SetPlayerVisible(character, visible)
+
+    for _,obj in ipairs(character:GetDescendants()) do
+
+        if obj:IsA("BasePart") then
+
+            obj.LocalTransparencyModifier =
+                visible and 0 or 1
+
+        elseif obj:IsA("Decal") then
+
+            obj.Transparency =
+                visible and 0 or 1
+
+        elseif obj:IsA("BillboardGui")
+        or obj:IsA("SurfaceGui") then
+
+            obj.Enabled = visible
+        end
+    end
+end
+
 VisualTab:CreateToggle({
     Name = "👥 Hide Players",
     CurrentValue = false,
+
     Callback = function(v)
+
         State.Visual.HidePlayers = v
+
+        for _,plr in ipairs(Players:GetPlayers()) do
+
+            if plr ~= LocalPlayer
+            and plr.Character then
+
+                SetPlayerVisible(
+                    plr.Character,
+                    not v
+                )
+            end
+        end
+
+        Notify(
+            "Hide Players",
+            v and "Players Hidden"
+            or "Players Visible"
+        )
     end,
 })
 
@@ -359,20 +460,39 @@ VisualTab:CreateToggle({
 VisualTab:CreateToggle({
     Name = "🌑 Remove Shadows",
     CurrentValue = false,
+
     Callback = function(v)
+
         State.Visual.Shadows = v
+
+        Lighting.GlobalShadows = not v
     end,
 })
 
 -------------------------------------------------
--- FX
+-- FX REMOVER
 -------------------------------------------------
 
 VisualTab:CreateToggle({
     Name = "🌪 Remove FX",
     CurrentValue = false,
+
     Callback = function(v)
+
         State.Visual.FX = v
+
+        for _,obj in ipairs(
+            Workspace:GetDescendants()
+        ) do
+
+            if obj:IsA("ParticleEmitter")
+            or obj:IsA("Trail")
+            or obj:IsA("Smoke")
+            or obj:IsA("Fire") then
+
+                obj.Enabled = not v
+            end
+        end
     end,
 })
 
@@ -385,16 +505,22 @@ VisualTab:CreateSlider({
     Range = {20,120},
     Increment = 1,
     CurrentValue = 70,
+
     Callback = function(v)
+
         State.Visual.Zoom = v
+
+        LocalPlayer.CameraMaxZoomDistance = v
+
     end,
 })
 
 -------------------------------------------------
--- CROSSHAIR GUI
+-- CROSSHAIR
 -------------------------------------------------
 
 local CrosshairGui = Instance.new("ScreenGui")
+
 CrosshairGui.Name = "RalineCrosshair"
 CrosshairGui.ResetOnSpawn = false
 CrosshairGui.Parent = game.CoreGui
@@ -412,28 +538,30 @@ local function CreateLine(size, pos)
     frame.Parent = CrosshairGui
 
     return frame
-
 end
 
-local CrosshairTop = CreateLine(
-    UDim2.new(0,2,0,10),
-    UDim2.new(0.5,0,0.5,-8)
-)
+local Crosshair = {
 
-local CrosshairBottom = CreateLine(
-    UDim2.new(0,2,0,10),
-    UDim2.new(0.5,0,0.5,8)
-)
+    CreateLine(
+        UDim2.new(0,2,0,10),
+        UDim2.new(0.5,0,0.5,-8)
+    ),
 
-local CrosshairLeft = CreateLine(
-    UDim2.new(0,10,0,2),
-    UDim2.new(0.5,-8,0.5,0)
-)
+    CreateLine(
+        UDim2.new(0,2,0,10),
+        UDim2.new(0.5,0,0.5,8)
+    ),
 
-local CrosshairRight = CreateLine(
-    UDim2.new(0,10,0,2),
-    UDim2.new(0.5,8,0.5,0)
-)
+    CreateLine(
+        UDim2.new(0,10,0,2),
+        UDim2.new(0.5,-8,0.5,0)
+    ),
+
+    CreateLine(
+        UDim2.new(0,10,0,2),
+        UDim2.new(0.5,8,0.5,0)
+    )
+}
 
 -------------------------------------------------
 -- ESP SYSTEM
@@ -449,7 +577,7 @@ local function CreateESP(player)
 
     local function Setup(character)
 
-        local head = character:WaitForChild("Head",5)
+        local head = character:FindFirstChild("Head")
 
         if not head then
             return
@@ -457,24 +585,25 @@ local function CreateESP(player)
 
         if ESPContainer[player] then
 
-            if ESPContainer[player].Billboard then
-                ESPContainer[player].Billboard:Destroy()
-            end
+            for _,v in pairs(
+                ESPContainer[player]
+            ) do
 
-            if ESPContainer[player].Highlight then
-                ESPContainer[player].Highlight:Destroy()
+                if v then
+                    v:Destroy()
+                end
             end
-
         end
 
         local billboard = Instance.new("BillboardGui")
-        billboard.Name = "RalineESP"
-        billboard.Size = UDim2.new(0,200,0,50)
+
+        billboard.Size = UDim2.new(0,200,0,40)
         billboard.AlwaysOnTop = true
         billboard.StudsOffset = Vector3.new(0,2.5,0)
         billboard.Parent = head
 
         local label = Instance.new("TextLabel")
+
         label.BackgroundTransparency = 1
         label.Size = UDim2.new(1,0,1,0)
         label.Font = Enum.Font.GothamBold
@@ -484,10 +613,12 @@ local function CreateESP(player)
         label.Parent = billboard
 
         local highlight = Instance.new("Highlight")
+
         highlight.FillTransparency = 1
         highlight.OutlineColor = Color3.fromRGB(0,255,255)
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.Enabled = false
+        highlight.DepthMode =
+            Enum.HighlightDepthMode.AlwaysOnTop
+
         highlight.Parent = character
 
         ESPContainer[player] = {
@@ -495,7 +626,6 @@ local function CreateESP(player)
             Label = label,
             Highlight = highlight
         }
-
     end
 
     if player.Character then
@@ -503,7 +633,6 @@ local function CreateESP(player)
     end
 
     player.CharacterAdded:Connect(Setup)
-
 end
 
 for _,plr in ipairs(Players:GetPlayers()) do
@@ -513,45 +642,62 @@ end
 Players.PlayerAdded:Connect(CreateESP)
 
 -------------------------------------------------
+-- GOD MODE SYSTEM
+-------------------------------------------------
+
+local function EnableGodMode()
+
+    if not Humanoid then
+        return
+    end
+
+    Humanoid.Health = Humanoid.MaxHealth
+
+    Humanoid:SetStateEnabled(
+        Enum.HumanoidStateType.FallingDown,
+        false
+    )
+
+    Humanoid:SetStateEnabled(
+        Enum.HumanoidStateType.Ragdoll,
+        false
+    )
+
+    Humanoid.BreakJointsOnDeath = false
+end
+
+-------------------------------------------------
 -- MAIN LOOP
 -------------------------------------------------
 
 RunService.RenderStepped:Connect(function()
 
-    local character = Character()
-    local hum = Humanoid()
-    local root = Root()
-
-    hum.UseJumpPower = true
-
     -------------------------------------------------
     -- SPEED
     -------------------------------------------------
 
-    if State.Speed.Enabled then
-
-        hum.WalkSpeed =
-            hum.WalkSpeed +
-            ((State.Speed.Value - hum.WalkSpeed) * 0.20)
-
-    else
-
-        hum.WalkSpeed = 16
-
-    end
+    Humanoid.WalkSpeed =
+        State.Speed.Enabled
+        and State.Speed.Value
+        or 16
 
     -------------------------------------------------
     -- JUMP
     -------------------------------------------------
 
-    if State.Jump.Enabled then
+    Humanoid.UseJumpPower = true
 
-        hum.JumpPower = State.Jump.Value
+    Humanoid.JumpPower =
+        State.Jump.Enabled
+        and State.Jump.Value
+        or 50
 
-    else
+    -------------------------------------------------
+    -- GOD MODE
+    -------------------------------------------------
 
-        hum.JumpPower = 50
-
+    if State.GodMode then
+        EnableGodMode()
     end
 
     -------------------------------------------------
@@ -560,14 +706,14 @@ RunService.RenderStepped:Connect(function()
 
     if State.Noclip then
 
-        for _,v in ipairs(character:GetDescendants()) do
+        for _,v in ipairs(
+            Character:GetChildren()
+        ) do
 
             if v:IsA("BasePart") then
                 v.CanCollide = false
             end
-
         end
-
     end
 
     -------------------------------------------------
@@ -576,27 +722,34 @@ RunService.RenderStepped:Connect(function()
 
     if State.ReverseWalk then
 
-        local moveDirection = hum.MoveDirection
+        local move = Humanoid.MoveDirection
 
-        if moveDirection.Magnitude > 0.05 then
+        if move.Magnitude > 0 then
 
-            local camLook = Camera.CFrame.LookVector
+            local look =
+                Camera.CFrame.LookVector
 
-            local flatLook = Vector3.new(
-                camLook.X,
-                0,
-                camLook.Z
-            ).Unit
+            local dir =
+                Vector3.new(
+                    look.X,
+                    0,
+                    look.Z
+                ).Unit
 
-            local targetCF = CFrame.lookAt(
-                root.Position,
-                root.Position + flatLook
-            ) * CFrame.Angles(0, math.rad(180), 0)
+            Root.CFrame = Root.CFrame:Lerp(
 
-            root.CFrame = root.CFrame:Lerp(targetCF,0.18)
+                CFrame.lookAt(
+                    Root.Position,
+                    Root.Position + dir
+                ) * CFrame.Angles(
+                    0,
+                    math.rad(180),
+                    0
+                ),
 
+                0.15
+            )
         end
-
     end
 
     -------------------------------------------------
@@ -605,124 +758,83 @@ RunService.RenderStepped:Connect(function()
 
     if State.Visual.Fullbright then
 
-        Lighting.Brightness = State.Visual.Brightness
+        Lighting.Brightness =
+            State.Visual.Brightness
+
         Lighting.ClockTime = 14
-        Lighting.Ambient = Color3.new(1,1,1)
 
-    end
-
-    -------------------------------------------------
-    -- SHADOWS
-    -------------------------------------------------
-
-    Lighting.GlobalShadows = not State.Visual.Shadows
-
-    -------------------------------------------------
-    -- FX REMOVER
-    -------------------------------------------------
-
-    if State.Visual.FX then
-
-        for _,v in ipairs(Workspace:GetDescendants()) do
-
-            if v:IsA("ParticleEmitter")
-            or v:IsA("Trail")
-            or v:IsA("Smoke")
-            or v:IsA("Fire") then
-
-                v.Enabled = false
-
-            end
-
-        end
-
-    end
-
-    -------------------------------------------------
-    -- HIDE PLAYERS
-    -------------------------------------------------
-
-    for _,plr in ipairs(Players:GetPlayers()) do
-
-        if plr ~= LocalPlayer and plr.Character then
-
-            for _,part in ipairs(plr.Character:GetDescendants()) do
-
-                if part:IsA("BasePart") then
-
-                    part.LocalTransparencyModifier =
-                        State.Visual.HidePlayers and 1 or 0
-
-                end
-
-            end
-
-        end
-
+        Lighting.Ambient =
+            Color3.new(1,1,1)
     end
 
     -------------------------------------------------
     -- ESP
     -------------------------------------------------
 
-    for player,data in pairs(ESPContainer) do
+    for player,data in pairs(
+        ESPContainer
+    ) do
 
         local char = player.Character
-        local rootPart = char and char:FindFirstChild("HumanoidRootPart")
 
-        if char and rootPart then
-
-            local distance = math.floor(
-                (root.Position - rootPart.Position).Magnitude
+        local rootPart =
+            char and char:FindFirstChild(
+                "HumanoidRootPart"
             )
 
-            data.Highlight.Enabled = State.ESP.Box
+        if rootPart then
 
-            if State.ESP.Names and State.ESP.Distance then
+            local distance = math.floor(
+
+                (Root.Position -
+                rootPart.Position).Magnitude
+
+            )
+
+            data.Highlight.Enabled =
+                State.ESP.Box
+
+            if State.ESP.Names
+            and State.ESP.Distance then
 
                 data.Label.Text =
-                    player.Name.." | "..distance.."m"
+                    player.Name..
+                    " | "..distance.."m"
 
             elseif State.ESP.Names then
 
-                data.Label.Text = player.Name
+                data.Label.Text =
+                    player.Name
 
             elseif State.ESP.Distance then
 
-                data.Label.Text = distance.."m"
+                data.Label.Text =
+                    distance.."m"
 
             else
-
                 data.Label.Text = ""
-
             end
 
             data.Billboard.Enabled =
-                State.ESP.Names or State.ESP.Distance
-
+                State.ESP.Names
+                or State.ESP.Distance
         end
-
     end
 
     -------------------------------------------------
     -- CROSSHAIR
     -------------------------------------------------
 
-    CrosshairTop.Visible = State.Visual.Crosshair
-    CrosshairBottom.Visible = State.Visual.Crosshair
-    CrosshairLeft.Visible = State.Visual.Crosshair
-    CrosshairRight.Visible = State.Visual.Crosshair
-
-    -------------------------------------------------
-    -- ZOOM
-    -------------------------------------------------
-
-    LocalPlayer.CameraMaxZoomDistance = State.Visual.Zoom
-
+    for _,v in ipairs(Crosshair) do
+        v.Visible = State.Visual.Crosshair
+    end
 end)
 
 -------------------------------------------------
 -- STARTUP
 -------------------------------------------------
 
-Notify("Raline UI", "Lightweight Final Version Loaded")
+Notify(
+    "Raline UI",
+    "Full Improved Loaded"
+)
