@@ -1,17 +1,16 @@
 --[[
 
-🧠 RALINE UI SYSTEM (FULL IMPROVED)
+🧠 RALINE UI SYSTEM (FINAL LITE)
 ✔ More Faster
 ✔ More Lightweight
-✔ Better Stability
 ✔ Optimized Render
-✔ Better ESP
-✔ Better Crosshair
 ✔ Stable Reverse Walk
 ✔ Better Hide Players
-✔ God Mode
+✔ Better ESP
+✔ Better Crosshair
 ✔ FX Optimizer
-✔ Cleaned System
+✔ No Heavy Loops
+✔ Respawn Stable
 
 ]]
 
@@ -55,17 +54,21 @@ local Rayfield = loadstring(
 )()
 
 local Window = Rayfield:CreateWindow({
+
     Name = "👑 Raline UI System",
     LoadingTitle = "Raline UI",
-    LoadingSubtitle = "Full Improved",
+    LoadingSubtitle = "Final Lite",
+
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "RalineUI",
         FileName = "Config"
     },
+
     Discord = {
         Enabled = false
     },
+
     KeySystem = false,
 })
 
@@ -88,7 +91,6 @@ local State = {
     InfiniteJump = false,
     Noclip = false,
     ReverseWalk = false,
-    GodMode = false,
 
     Visual = {
         Crosshair = false,
@@ -136,7 +138,8 @@ HomeTab:CreateParagraph({
 
 HomeTab:CreateLabel("Username : "..LocalPlayer.Name)
 
-local device = UIS.TouchEnabled and "Mobile" or "PC"
+local device =
+    UIS.TouchEnabled and "Mobile" or "PC"
 
 HomeTab:CreateLabel("Device : "..device)
 
@@ -167,13 +170,20 @@ end)
 
 HomeTab:CreateButton({
     Name = "🔄 Rejoin Server",
+
     Callback = function()
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+
+        TeleportService:Teleport(
+            game.PlaceId,
+            LocalPlayer
+        )
+
     end,
 })
 
 HomeTab:CreateButton({
     Name = "⛔ Disable UI",
+
     Callback = function()
         Rayfield:Destroy()
     end,
@@ -183,7 +193,8 @@ HomeTab:CreateButton({
 -- PLAYER TAB
 -------------------------------------------------
 
-local PlayerTab = Window:CreateTab("⚡ Player", 4483362458)
+local PlayerTab =
+    Window:CreateTab("⚡ Player", 4483362458)
 
 -------------------------------------------------
 -- SPEED
@@ -275,25 +286,6 @@ PlayerTab:CreateToggle({
 })
 
 -------------------------------------------------
--- GOD MODE
--------------------------------------------------
-
-PlayerTab:CreateToggle({
-    Name = "🛡 God Mode",
-    CurrentValue = false,
-
-    Callback = function(v)
-
-        State.GodMode = v
-
-        Notify(
-            "God Mode",
-            v and "Enabled" or "Disabled"
-        )
-    end,
-})
-
--------------------------------------------------
 -- REVERSE WALK
 -------------------------------------------------
 
@@ -318,7 +310,8 @@ PlayerTab:CreateToggle({
 -- VISUAL TAB
 -------------------------------------------------
 
-local VisualTab = Window:CreateTab("👁 Visual", 4483362458)
+local VisualTab =
+    Window:CreateTab("👁 Visual", 4483362458)
 
 -------------------------------------------------
 -- ESP
@@ -382,7 +375,8 @@ VisualTab:CreateToggle({
 
             Lighting.Brightness = 1
             Lighting.ClockTime = 12
-            Lighting.Ambient = Color3.fromRGB(128,128,128)
+            Lighting.Ambient =
+                Color3.fromRGB(128,128,128)
 
         end
     end,
@@ -405,7 +399,9 @@ VisualTab:CreateSlider({
 
 local function SetPlayerVisible(character, visible)
 
-    for _,obj in ipairs(character:GetDescendants()) do
+    for _,obj in ipairs(
+        character:GetDescendants()
+    ) do
 
         if obj:IsA("BasePart") then
 
@@ -433,7 +429,9 @@ VisualTab:CreateToggle({
 
         State.Visual.HidePlayers = v
 
-        for _,plr in ipairs(Players:GetPlayers()) do
+        for _,plr in ipairs(
+            Players:GetPlayers()
+        ) do
 
             if plr ~= LocalPlayer
             and plr.Character then
@@ -466,6 +464,7 @@ VisualTab:CreateToggle({
         State.Visual.Shadows = v
 
         Lighting.GlobalShadows = not v
+
     end,
 })
 
@@ -491,6 +490,7 @@ VisualTab:CreateToggle({
             or obj:IsA("Fire") then
 
                 obj.Enabled = not v
+
             end
         end
     end,
@@ -516,7 +516,7 @@ VisualTab:CreateSlider({
 })
 
 -------------------------------------------------
--- CROSSHAIR
+-- CROSSHAIR UI
 -------------------------------------------------
 
 local CrosshairGui = Instance.new("ScreenGui")
@@ -529,7 +529,9 @@ local function CreateLine(size, pos)
 
     local frame = Instance.new("Frame")
 
-    frame.BackgroundColor3 = Color3.new(1,1,1)
+    frame.BackgroundColor3 =
+        Color3.new(1,1,1)
+
     frame.BorderSizePixel = 0
     frame.AnchorPoint = Vector2.new(0.5,0.5)
     frame.Position = pos
@@ -577,7 +579,8 @@ local function CreateESP(player)
 
     local function Setup(character)
 
-        local head = character:FindFirstChild("Head")
+        local head =
+            character:FindFirstChild("Head")
 
         if not head then
             return
@@ -595,14 +598,20 @@ local function CreateESP(player)
             end
         end
 
-        local billboard = Instance.new("BillboardGui")
+        local billboard =
+            Instance.new("BillboardGui")
 
-        billboard.Size = UDim2.new(0,200,0,40)
+        billboard.Size =
+            UDim2.new(0,200,0,40)
+
         billboard.AlwaysOnTop = true
-        billboard.StudsOffset = Vector3.new(0,2.5,0)
+        billboard.StudsOffset =
+            Vector3.new(0,2.5,0)
+
         billboard.Parent = head
 
-        local label = Instance.new("TextLabel")
+        local label =
+            Instance.new("TextLabel")
 
         label.BackgroundTransparency = 1
         label.Size = UDim2.new(1,0,1,0)
@@ -612,10 +621,13 @@ local function CreateESP(player)
         label.TextColor3 = Color3.new(1,1,1)
         label.Parent = billboard
 
-        local highlight = Instance.new("Highlight")
+        local highlight =
+            Instance.new("Highlight")
 
         highlight.FillTransparency = 1
-        highlight.OutlineColor = Color3.fromRGB(0,255,255)
+        highlight.OutlineColor =
+            Color3.fromRGB(0,255,255)
+
         highlight.DepthMode =
             Enum.HighlightDepthMode.AlwaysOnTop
 
@@ -640,31 +652,6 @@ for _,plr in ipairs(Players:GetPlayers()) do
 end
 
 Players.PlayerAdded:Connect(CreateESP)
-
--------------------------------------------------
--- GOD MODE SYSTEM
--------------------------------------------------
-
-local function EnableGodMode()
-
-    if not Humanoid then
-        return
-    end
-
-    Humanoid.Health = Humanoid.MaxHealth
-
-    Humanoid:SetStateEnabled(
-        Enum.HumanoidStateType.FallingDown,
-        false
-    )
-
-    Humanoid:SetStateEnabled(
-        Enum.HumanoidStateType.Ragdoll,
-        false
-    )
-
-    Humanoid.BreakJointsOnDeath = false
-end
 
 -------------------------------------------------
 -- MAIN LOOP
@@ -693,14 +680,6 @@ RunService.RenderStepped:Connect(function()
         or 50
 
     -------------------------------------------------
-    -- GOD MODE
-    -------------------------------------------------
-
-    if State.GodMode then
-        EnableGodMode()
-    end
-
-    -------------------------------------------------
     -- NOCLIP
     -------------------------------------------------
 
@@ -722,7 +701,8 @@ RunService.RenderStepped:Connect(function()
 
     if State.ReverseWalk then
 
-        local move = Humanoid.MoveDirection
+        local move =
+            Humanoid.MoveDirection
 
         if move.Magnitude > 0 then
 
@@ -736,7 +716,8 @@ RunService.RenderStepped:Connect(function()
                     look.Z
                 ).Unit
 
-            Root.CFrame = Root.CFrame:Lerp(
+            Root.CFrame =
+                Root.CFrame:Lerp(
 
                 CFrame.lookAt(
                     Root.Position,
@@ -826,7 +807,8 @@ RunService.RenderStepped:Connect(function()
     -------------------------------------------------
 
     for _,v in ipairs(Crosshair) do
-        v.Visible = State.Visual.Crosshair
+        v.Visible =
+            State.Visual.Crosshair
     end
 end)
 
@@ -836,5 +818,5 @@ end)
 
 Notify(
     "Raline UI",
-    "Full Improved Loaded"
+    "Final Lite Loaded"
 )
