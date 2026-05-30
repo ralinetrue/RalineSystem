@@ -1,6 +1,6 @@
 --====================================================
--- 🇮🇩 ABSOLUTE COUNTER | 🇮🇩 Raline
--- ✔ VISUAL HIDE ONLY (PARTICLES & VEHICLES)
+-- 🇮🇩 ADMIN ANDALANA RALINE | PANDERA INDONESIA
+-- ✔ VISUAL HIDE: DEEP SCAN SEAT LOGIC
 -- ✔ ESP WITH TEXT SIZE & SPEED/JUMP
 -- ✔ FPS & Ping Working Perfectly
 --====================================================
@@ -52,12 +52,12 @@ local Settings = {
         Name = false,
         Distance = false,
         TeamColor = false,
-        SpeedJump = false, -- Ganti MotionInfo jadi SpeedJump
-        TextSize = 14 -- Tambahkan pengaturan ukuran tulisan
+        SpeedJump = false,
+        TextSize = 14
     },
 
-    HideParticles = false, -- Ganti RemoveEffects jadi HideParticles
-    HideVehicles = false,  -- Ganti RemoveSpawned jadi HideVehicles
+    HideParticles = false,
+    HideVehicles = false, -- Deep Scan Mode
     InfiniteJump = false,
     Noclip = false,
 
@@ -82,7 +82,7 @@ local DefaultLighting = {
 local Window = Rayfield:CreateWindow({
    Name = "🇮🇩 Admin Andalana Raline | Pandera Indonesia",
    LoadingTitle = "🚀 System Loading",
-   LoadingSubtitle = "Visual Hide Update Ready",
+   LoadingSubtitle = "Deep Scan Vehicle Hide",
    ConfigurationSaving = {Enabled = true, FolderName = "RalineData", FileName = "Settings"},
    Discord = {Enabled = false},
    KeySystem = false
@@ -141,7 +141,7 @@ HomeTab:CreateParagraph({Title = "Server ID", Content = tostring(game.PlaceId)})
 -- 🔘 QUICK ACTIONS
 HomeTab:CreateSection("🔘 Quick Actions")
 HomeTab:CreateButton({Name = "⭐ Rejoin Server", Callback = function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end})
-HomeTab:CreateButton({Name = "⭐ Copy Discord Link", Callback = function() if setclipboard then setclipboard("https://discord.gg/HcrkD4MpUN") end Notify("Copied", "Discord link copied to clipboard!") end})
+HomeTab:CreateButton({Name = "⭐ Copy Discord Link", Callback = function() if setclipboard then setclipboard("https://discord.gg/BZuuYPWanz") end Notify("Copied", "Discord link copied to clipboard!") end})
 HomeTab:CreateButton({Name = "⭐ Destroy UI", Callback = function() Rayfield:Destroy() end})
 
 -- 🛡️ ANTI AFK
@@ -220,9 +220,9 @@ PlayerTab:CreateSlider({
 -- 🙈 PLAYER VISIBILITY
 PlayerTab:CreateSection("🙈 Player Visibility")
 
-local function SetVisibility(Character, Visible)
+local function SetVisibility(CharModel, Visible)
     pcall(function()
-        for _,Obj in pairs(Character:GetDescendants()) do
+        for _,Obj in pairs(CharModel:GetDescendants()) do
             if Obj:IsA("BasePart") then Obj.LocalTransparencyModifier = Visible and 0 or 1 end
             if Obj:IsA("Decal") then Obj.Transparency = Visible and 0 or 1 end
             if Obj:IsA("GuiObject") then Obj.Visible = Visible end
@@ -241,7 +241,7 @@ PlayerTab:CreateToggle({
 })
 
 --====================================================
--- 📦 ESP SYSTEM (UPDATED)
+-- 📦 ESP SYSTEM
 --====================================================
 PlayerTab:CreateSection("📦 ESP System")
 PlayerTab:CreateToggle({
@@ -259,9 +259,8 @@ PlayerTab:CreateToggle({Name = "Esp Box", CurrentValue = false, Callback = funct
 PlayerTab:CreateToggle({Name = "Esp Name", CurrentValue = false, Callback = function(v) Settings.ESP.Name = v end})
 PlayerTab:CreateToggle({Name = "Esp Distance", CurrentValue = false, Callback = function(v) Settings.ESP.Distance = v end})
 PlayerTab:CreateToggle({Name = "Esp Team Color", CurrentValue = false, Callback = function(v) Settings.ESP.TeamColor = v end})
-PlayerTab:CreateToggle({Name = "Esp Speed & Jump", CurrentValue = false, Callback = function(v) Settings.ESP.SpeedJump = v end}) -- Pengganti Motion Info
+PlayerTab:CreateToggle({Name = "Esp Speed & Jump", CurrentValue = false, Callback = function(v) Settings.ESP.SpeedJump = v end})
 
--- FITUR BARU: URAIAN UKURAN TULISAN
 PlayerTab:CreateSlider({
     Name = "Esp Text Size",
     Range = {10, 30},
@@ -269,7 +268,6 @@ PlayerTab:CreateSlider({
     CurrentValue = 14,
     Callback = function(v) 
         Settings.ESP.TextSize = v
-        -- Update ukuran langsung untuk ESP yang sudah ada
         for _, Data in pairs(ESPObjects) do
             if Data.Label then Data.Label.TextSize = v end
         end
@@ -286,13 +284,11 @@ local function CreateESP(PlayerObj)
             local HRP = Char:FindFirstChild("HumanoidRootPart")
             if not Head or not HRP then return end
 
-            -- Highlight Box
             local Highlight = Instance.new("Highlight", Char)
             Highlight.Name = "ESP_Raline"
             Highlight.FillTransparency = 0.5
             Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
-            -- Text UI
             local UI = Instance.new("BillboardGui", Head)
             UI.AlwaysOnTop = true
             UI.Size = UDim2.new(0,200,0,50)
@@ -301,7 +297,6 @@ local function CreateESP(PlayerObj)
             Label.BackgroundTransparency = 1
             Label.Size = UDim2.new(1,0,1,0)
             Label.Font = Enum.Font.GothamBold
-            -- Ubah TextScaled jadi false agar kita bisa kontrol TextSize
             Label.TextScaled = false 
             Label.TextSize = Settings.ESP.TextSize 
             Label.TextStrokeTransparency = 0
@@ -316,23 +311,37 @@ for _,v in pairs(Players:GetPlayers()) do CreateESP(v) end
 Players.PlayerAdded:Connect(CreateESP)
 
 --====================================================
--- 🗑️ VISUAL HIDE SYSTEM (UPDATED)
+-- 🗑️ VISUAL HIDE SYSTEM (FIXED DEEP SCAN)
 --====================================================
 PlayerTab:CreateSection("🗑️ Visual Hiding Only")
 
--- Function to Handle Particle/Effect Hiding
+-- Function: Cek apakah Model ini kendaraan (Deep Scan Seat)
+local function IsVehicle(Model)
+    if Model:FindFirstChildOfClass("VehicleSeat") or Model:FindFirstChildOfClass("Seat") then
+        return true
+    end
+    return false
+end
+
+-- Function: Set transparansi model
+local function SetModelTransparency(Model, IsHidden)
+    for _, Part in pairs(Model:GetDescendants()) do
+        if Part:IsA("BasePart") then
+            Part.LocalTransparencyModifier = IsHidden and 1 or 0
+        end
+    end
+end
+
+-- Function: Handle Particles
 local function UpdateParticleVisibility()
-    -- Atmosphere & Clouds
     local Atm = Lighting:FindFirstChild("Atmosphere")
-    if Atm then Atm.Density = Settings.HideParticles and 0 or 0.3 end -- Default density approx
+    if Atm then Atm.Density = Settings.HideParticles and 0 or 0.3 end
     
     local Cld = Lighting:FindFirstChild("Clouds")
     if Cld then Cld.Cover = Settings.HideParticles and 0 or 0.5 end
 
-    -- Global Shadows
-    if Settings.HideParticles then Lighting.GlobalShadows = false else Lighting.GlobalShadows = true end
+    Lighting.GlobalShadows = not Settings.HideParticles
 
-    -- Iterate Workspace for Particles/Trails
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") then
             obj.Enabled = not Settings.HideParticles
@@ -343,47 +352,47 @@ local function UpdateParticleVisibility()
     end
 end
 
--- Function to Handle Vehicle/Object Hiding (Visual Only)
+-- Function: Handle Vehicles (Deep Scan + Pindai Semua Model di Workspace)
 local function UpdateVehicleVisibility()
+    -- Kita scan SEMUA Model yang ada di Workspace (termasuk yang ada di dalam folder)
     for _, obj in pairs(Workspace:GetDescendants()) do
-        -- Kita gunakan LocalTransparencyModifier agar client-side only
-        if obj:IsA("BasePart") then
-            -- Cek apakah bagian ini adalah bagian dari Karakter Player
-            local isPlayerPart = obj:IsDescendantOf(Character)
-            
-            if not isPlayerPart then
-                -- Jika HideVehicles aktif, buat transparan total (1)
-                -- Jika tidak aktif, kembalikan ke 0
-                obj.LocalTransparencyModifier = Settings.HideVehicles and 1 or 0
+        if obj:IsA("Model") then
+            -- Abaikan Karakter Player
+            if obj ~= Character then
+                -- Deep Scan: Cek apakah ada Seat di dalam model ini
+                if IsVehicle(obj) then
+                    SetModelTransparency(obj, Settings.HideVehicles)
+                end
             end
         end
     end
 end
 
--- Toggle Partikel/Shadow
+-- Toggle Partikel
 PlayerTab:CreateToggle({
     Name = "Hide All Particles & Shadow",
     CurrentValue = false,
     Callback = function(v)
         Settings.HideParticles = v
         UpdateParticleVisibility()
-        Notify("Visual", v and "Particles & Shadow Hidden" or "Visuals Restored")
+        Notify("Visual", v and "Particles Hidden" or "Particles Restored")
     end
 })
 
--- Toggle Kendaraan/Objek (Visual Only)
+-- Toggle Kendaraan (Deep Scan Mode)
 PlayerTab:CreateToggle({
-    Name = "Hide Vehicles / Objects (Visual)",
+    Name = "Hide Spawned Vehicles (Deep Scan)",
     CurrentValue = false,
     Callback = function(v)
         Settings.HideVehicles = v
         UpdateVehicleVisibility()
-        Notify("Visual", v and "Objects Invisible (Ghost Mode)" or "Objects Visible")
+        Notify("Visual", v and "Scanning & Hiding Vehicles..." or "Vehicles Visible")
     end
 })
 
--- Listener untuk object baru yang spawn (agar otomatis hilang jika toggle aktif)
+-- Listener Object Baru
 Workspace.DescendantAdded:Connect(function(obj)
+    -- 1. Handle Particles
     if Settings.HideParticles then
         if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("PointLight") or obj:IsA("SpotLight") then
             obj.Enabled = false
@@ -392,9 +401,24 @@ Workspace.DescendantAdded:Connect(function(obj)
         if obj:IsA("Clouds") then obj.Cover = 0 end
     end
 
-    if Settings.HideVehicles then
-        if obj:IsA("BasePart") and not obj:IsDescendantOf(Character) then
-            obj.LocalTransparencyModifier = 1
+    -- 2. Handle Vehicles (Jika objek yang ditambahkan adalah Model)
+    if obj:IsA("Model") and obj ~= Character then
+        if Settings.HideVehicles then
+            -- Cek langsung apakah model baru ini adalah kendaraan
+            if IsVehicle(obj) then
+                SetModelTransparency(obj, true)
+            end
+        end
+    end
+    
+    -- 3. Handle Vehicles (Jika objek yang ditambahkan adalah Seat di dalam model yang sudah ada)
+    -- Kadang seat ditambahkan belakangan
+    if obj:IsA("VehicleSeat") or obj:IsA("Seat") then
+        if Settings.HideVehicles then
+            local ParentModel = obj:FindFirstAncestorOfClass("Model")
+            if ParentModel and ParentModel ~= Character then
+                SetModelTransparency(ParentModel, true)
+            end
         end
     end
 end)
@@ -447,7 +471,6 @@ local LastTime = tick()
 local FrameCount = 0
 
 RunService.RenderStepped:Connect(function()
-    -- FPS Counter
     local currentTime = tick()
     FrameCount = FrameCount + 1
     if currentTime - LastTime >= 1 then
@@ -461,24 +484,19 @@ RunService.RenderStepped:Connect(function()
 
     if not Character or not Humanoid or not RootPart then return end
 
-    -- 🚀 SPEED & JUMP LOGIC
     pcall(function()
         Humanoid.WalkSpeed = Settings.Speed.Enabled and Settings.Speed.Value or 16
         Humanoid.JumpPower = Settings.Jump.Enabled and Settings.Jump.Value or 50
     end)
 
-    -- 👻 NOCLIP LOGIC
     if Settings.Noclip then
         pcall(function() for _,b in pairs(Character:GetDescendants()) do if b:IsA("BasePart") then b.CanCollide=false end end end)
     end
 
-    -- 📷 CAMERA LOGIC
     if Settings.Camera.Enabled then LocalPlayer.CameraMaxZoomDistance = Settings.Camera.Value end
 
-    -- 🎯 CROSSHAIR LOGIC
     for _,g in pairs(Crosshair) do g.Visible = Settings.Crosshair end
 
-    -- 📦 ESP LOGIC
     if Settings.ESP.Main then
         for PlayerObj, Data in pairs(ESPObjects) do
             pcall(function()
@@ -486,12 +504,10 @@ RunService.RenderStepped:Connect(function()
                 if not TargetChar or not TargetChar:FindFirstChild("HumanoidRootPart") then Data.Highlight.Enabled=false Data.Text.Enabled=false return end
                 local TargetHRP = TargetChar.HumanoidRootPart
 
-                -- Calculate Real-Time Data
                 local Distance = math.floor((RootPart.Position - TargetHRP.Position).Magnitude)
                 local RealSpeed = math.floor(Vector3.new(TargetHRP.Velocity.X,0,TargetHRP.Velocity.Z).Magnitude)
                 local RealJump = math.floor(TargetHRP.Velocity.Y)
 
-                -- 🎨 COLOR RULES
                 if Settings.ESP.TeamColor and PlayerObj.Team and LocalPlayer.Team then
                     if PlayerObj.Team == LocalPlayer.Team then
                         Data.Highlight.OutlineColor = Color3.fromRGB(0, 150, 255)
@@ -505,18 +521,15 @@ RunService.RenderStepped:Connect(function()
                     Data.Label.TextColor3 = Color3.fromRGB(255, 255, 0)
                 end
 
-                -- ✅ ENABLE FEATURES
                 Data.Highlight.Enabled = Settings.ESP.Box
                 Data.Text.Enabled = Settings.ESP.Name or Settings.ESP.Distance or Settings.ESP.SpeedJump
 
-                -- 📝 BUILD TEXT
                 local Text = ""
                 if Settings.ESP.Name then Text = Text..PlayerObj.Name.." " end
                 if Settings.ESP.Distance then Text = Text.."| "..Distance.."m " end
                 if Settings.ESP.SpeedJump then Text = Text.."| SPD:"..RealSpeed.." JMP:"..RealJump end
 
                 Data.Label.Text = Text
-                -- Update TextSize secara real-time
                 Data.Label.TextSize = Settings.ESP.TextSize
             end)
         end
