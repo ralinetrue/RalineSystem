@@ -1,13 +1,15 @@
 --====================================================
--- RALINE SYSTEM
+-- 🇮🇩 ABSOLUTE COUNTER | 🇮🇩 Raline
+-- ✔ VISUAL HIDE ONLY (PARTICLES & VEHICLES)
+-- ✔ ESP WITH TEXT SIZE & SPEED/JUMP
+-- ✔ FPS & Ping Working Perfectly
 --====================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 --====================================================
--- SERVICES
+-- 🧩 SERVICES
 --====================================================
-
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
@@ -15,637 +17,511 @@ local TeleportService = game:GetService("TeleportService")
 local VirtualUser = game:GetService("VirtualUser")
 local UserInputService = game:GetService("UserInputService")
 local Stats = game:GetService("Stats")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
 
 --====================================================
--- PLAYER
+-- 👤 PLAYER SETUP
 --====================================================
-
 local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- Auto Update Character on Respawn
+LocalPlayer.CharacterAdded:Connect(function(NewChar)
+    Character = NewChar
+    Humanoid = Character:WaitForChild("Humanoid", 10)
+    RootPart = Character:WaitForChild("HumanoidRootPart", 10)
+end)
 
 --====================================================
--- VARIABLES
+-- ⚙️ SETTINGS & STATE
 --====================================================
+local Settings = {
+    AntiAFK = false,
 
-local Noclip = false
-local HidePlayer = false
-local AntiAFK = false
-local ESPEnabled = false
+    Speed = {Enabled = false, Value = 17},
+    Jump = {Enabled = false, Value = 51},
+    Fullbright = {Enabled = false, Value = 2},
+    HidePlayers = false,
 
-local SpeedEnabled = false
-local SpeedValue = 16.5
+    ESP = {
+        Main = false,
+        Box = false,
+        Name = false,
+        Distance = false,
+        TeamColor = false,
+        SpeedJump = false, -- Ganti MotionInfo jadi SpeedJump
+        TextSize = 14 -- Tambahkan pengaturan ukuran tulisan
+    },
 
-local JumpEnabled = false
-local JumpValue = 51
+    HideParticles = false, -- Ganti RemoveEffects jadi HideParticles
+    HideVehicles = false,  -- Ganti RemoveSpawned jadi HideVehicles
+    InfiniteJump = false,
+    Noclip = false,
 
-local BrightnessValue = 2
+    Camera = {Enabled = false, Value = 70},
+    Crosshair = false
+}
+
+local ESPObjects = {}
+local DefaultLighting = {
+    Brightness = Lighting.Brightness,
+    Time = Lighting.ClockTime,
+    Fog = Lighting.FogEnd,
+    Shadows = Lighting.GlobalShadows,
+    Ambient = Lighting.Ambient,
+    Atmosphere = Lighting:FindFirstChild("Atmosphere") and Lighting.Atmosphere.Density or 0,
+    Clouds = Lighting:FindFirstChild("Clouds") and Lighting.Clouds.Cover or 0
+}
 
 --====================================================
--- WINDOW
+-- 🖥️ UI WINDOW
 --====================================================
-
 local Window = Rayfield:CreateWindow({
-   Name = "🇮🇩 Raline",
-   LoadingTitle = "🏎️ Balap System",
-   LoadingSubtitle = "⚙️ Raline Founder",
-
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "RalineSystem",
-      FileName = "RalineConfig"
-   },
-
-   Discord = {
-      Enabled = false
-   },
-
-   KeySystem = true,
-
-   KeySettings = {
-      Title = "🔐 Raline Key",
-      Subtitle = "One Device Access",
-      Note = "Masukkan Key Untuk Melanjutkan",
-      FileName = "RalineKey",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"1801"}
-   }
+   Name = "🇮🇩 Admin Andalana Raline | Pandera Indonesia",
+   LoadingTitle = "🚀 System Loading",
+   LoadingSubtitle = "Visual Hide Update Ready",
+   ConfigurationSaving = {Enabled = true, FolderName = "RalineData", FileName = "Settings"},
+   Discord = {Enabled = false},
+   KeySystem = false
 })
 
 --====================================================
--- NOTIFICATION
+-- 🔔 NOTIFICATION SYSTEM
 --====================================================
+local function Notify(Title, Text)
+    Rayfield:Notify({
+        Title = Title,
+        Content = Text,
+        Duration = 4
+    })
+end
 
-Rayfield:Notify({
-   Title = "🎮 Raline Script Loaded!",
-   Content = "All features ready to use. Have fun and stay powerful 🚀",
-   Duration = 6,
-   Image = 4483362458,
-})
+Notify("✅ Success", "System loaded successfully!")
 
 --====================================================
--- HOME TAB
+-- 🏠 TAB: HOME
 --====================================================
-
 local HomeTab = Window:CreateTab("🏠 Home", 4483362458)
 
-HomeTab:CreateParagraph({
-   Title = "🎮 Raline Script Loaded!",
-   Content = "All features ready to use.\nHave fun and stay powerful 🚀"
+-- 📋 ACCOUNT INFO
+HomeTab:CreateSection("📋 Account Information")
+HomeTab:CreateParagraph({Title = "Username", Content = LocalPlayer.Name})
+HomeTab:CreateParagraph({Title = "User ID", Content = tostring(LocalPlayer.UserId)})
+
+-- Device Detection
+local DeviceType = UserInputService.TouchEnabled and "Mobile" or UserInputService.GamepadEnabled and "Console" or "PC"
+local DeviceString = "Real " .. DeviceType 
+HomeTab:CreateParagraph({Title = "Device", Content = DeviceString})
+
+-- Executor Info
+local Executor = "Unknown / Undetected"
+pcall(function() if identifyexecutor then Executor = identifyexecutor() end end)
+HomeTab:CreateParagraph({Title = "Executor", Content = Executor})
+
+-- 📊 PERFORMANCE
+HomeTab:CreateSection("📊 Real-Time Performance")
+local FPS_Display = HomeTab:CreateParagraph({
+    Title = "FPS",
+    Content = "Loading..."
 })
 
--- DEVICE DETECT
-local DeviceType = "PC"
-
-if UserInputService.TouchEnabled then
-   DeviceType = "Mobile"
-elseif UserInputService.GamepadEnabled then
-   DeviceType = "Console"
-end
-
--- PLAYER INFO
-HomeTab:CreateParagraph({
-   Title = "👤 Player Info",
-   Content =
-      "Username : "..LocalPlayer.Name..
-      "\nID : "..LocalPlayer.UserId..
-      "\nDevice : "..DeviceType
+local Ping_Display = HomeTab:CreateParagraph({
+    Title = "Ping",
+    Content = "Loading..."
 })
 
--- EXECUTOR INFO
-local ExecutorName = "Unknown"
+-- 🌐 SERVER INFO
+HomeTab:CreateSection("🌐 Server Information")
+HomeTab:CreateParagraph({Title = "Map Name", Content = Workspace.Name})
+HomeTab:CreateParagraph({Title = "Server ID", Content = tostring(game.PlaceId)})
 
-pcall(function()
+-- 🔘 QUICK ACTIONS
+HomeTab:CreateSection("🔘 Quick Actions")
+HomeTab:CreateButton({Name = "⭐ Rejoin Server", Callback = function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end})
+HomeTab:CreateButton({Name = "⭐ Copy Discord Link", Callback = function() if setclipboard then setclipboard("https://discord.gg/HcrkD4MpUN") end Notify("Copied", "Discord link copied to clipboard!") end})
+HomeTab:CreateButton({Name = "⭐ Destroy UI", Callback = function() Rayfield:Destroy() end})
 
-   if identifyexecutor then
-      ExecutorName = identifyexecutor()
-   end
+-- 🛡️ ANTI AFK
+HomeTab:CreateToggle({
+    Name = "🛡️ Anti AFK",
+    CurrentValue = false,
+    Callback = function(v) Settings.AntiAFK = v end
+})
+LocalPlayer.Idled:Connect(function() if Settings.AntiAFK then VirtualUser:CaptureController() VirtualUser:ClickButton2(Vector2.new()) end end)
 
-end)
+--====================================================
+-- ⚡ TAB: PLAYER
+--====================================================
+local PlayerTab = Window:CreateTab("⚡ Player Settings", 4483362458)
 
-HomeTab:CreateParagraph({
-   Title = "⚡ Executor",
-   Content = ExecutorName
+-- 🏃 SPEED CONTROL
+PlayerTab:CreateSection("🏃 Speed")
+PlayerTab:CreateToggle({
+    Name = "Speed",
+    CurrentValue = false,
+    Callback = function(v) Settings.Speed.Enabled = v end
+})
+PlayerTab:CreateSlider({
+    Name = "Speed Value",
+    Range = {17, 45},
+    Increment = 0.5,
+    CurrentValue = 17,
+    Callback = function(v) Settings.Speed.Value = v end
 })
 
---====================================================
--- PERFORMANCE
---====================================================
-
-local PerformanceParagraph = HomeTab:CreateParagraph({
-   Title = "📊 Performance",
-   Content = "Loading..."
+-- 🦘 JUMP CONTROL
+PlayerTab:CreateSection("🦘 Jump Power")
+PlayerTab:CreateToggle({
+    Name = "Jump",
+    CurrentValue = false,
+    Callback = function(v) Settings.Jump.Enabled = v end
+})
+PlayerTab:CreateSlider({
+    Name = "Jump Value",
+    Range = {51, 75},
+    Increment = 0.5,
+    CurrentValue = 51,
+    Callback = function(v) Settings.Jump.Value = v end
 })
 
-task.spawn(function()
-
-   while task.wait(1) do
-
-      local Device = "PC"
-
-      if UserInputService.TouchEnabled then
-         Device = "Mobile"
-      elseif UserInputService.GamepadEnabled then
-         Device = "Console"
-      end
-
-      local FPS = math.floor(workspace:GetRealPhysicsFPS())
-
-      local Ping = 0
-
-      pcall(function()
-
-         Ping = math.floor(
-            Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-         )
-
-      end)
-
-      pcall(function()
-
-         PerformanceParagraph:Set({
-            Title = "📊 Performance",
-            Content =
-               "Device : "..Device..
-               "\nFPS : "..FPS..
-               "\nPing : "..Ping.." ms"
-         })
-
-      end)
-
-   end
-
-end)
-
---====================================================
--- HOME BUTTONS
---====================================================
-
-HomeTab:CreateButton({
-   Name = "📋 Copy Discord",
-
-   Callback = function()
-
-      if setclipboard then
-         setclipboard("https://discord.gg/BZuuYPWanz")
-      end
-
-      Rayfield:Notify({
-         Title = "Discord Copied",
-         Content = "Invite copied to clipboard!",
-         Duration = 4,
-      })
-
-   end,
-})
-
-HomeTab:CreateButton({
-   Name = "🔄 Rejoin",
-
-   Callback = function()
-      TeleportService:Teleport(game.PlaceId, LocalPlayer)
-   end,
-})
-
-HomeTab:CreateButton({
-   Name = "🌍 Server Hop",
-
-   Callback = function()
-      TeleportService:Teleport(game.PlaceId)
-   end,
-})
-
-HomeTab:CreateButton({
-   Name = "❌ Destroy UI",
-
-   Callback = function()
-
-      if game.CoreGui:FindFirstChild("Rayfield") then
-         game.CoreGui.Rayfield:Destroy()
-      end
-
-   end,
-})
-
---====================================================
--- RACE TAB
---====================================================
-
-local RaceTab = Window:CreateTab("🏎️ Race", 4483362458)
-
---====================================================
--- SPEED
---====================================================
-
-RaceTab:CreateToggle({
-   Name = "⚡ Speed",
-   CurrentValue = false,
-
-   Callback = function(Value)
-
-      SpeedEnabled = Value
-
-      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-
-         if Value then
-            LocalPlayer.Character.Humanoid.WalkSpeed = SpeedValue
-         else
-            LocalPlayer.Character.Humanoid.WalkSpeed = 16.5
-         end
-
-      end
-   end,
-})
-
-RaceTab:CreateSlider({
-   Name = "⚡ Speed Value",
-   Range = {16.5,45},
-   Increment = 0.5,
-   CurrentValue = 16.5,
-
-   Callback = function(Value)
-
-      SpeedValue = Value
-
-      if SpeedEnabled then
-
-         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = Value
-         end
-
-      end
-   end,
-})
-
---====================================================
--- JUMP
---====================================================
-
-RaceTab:CreateToggle({
-   Name = "🦘 Jump",
-   CurrentValue = false,
-
-   Callback = function(Value)
-
-      JumpEnabled = Value
-
-      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-
-         if Value then
-            LocalPlayer.Character.Humanoid.JumpPower = JumpValue
-         else
-            LocalPlayer.Character.Humanoid.JumpPower = 51
-         end
-
-      end
-   end,
-})
-
-RaceTab:CreateSlider({
-   Name = "🦘 Jump Value",
-   Range = {51,75},
-   Increment = 0.5,
-   CurrentValue = 51,
-
-   Callback = function(Value)
-
-      JumpValue = Value
-
-      if JumpEnabled then
-
-         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.JumpPower = Value
-         end
-
-      end
-   end,
-})
-
---====================================================
--- NOCLIP
---====================================================
-
-RaceTab:CreateToggle({
-   Name = "👻 Noclip",
-   CurrentValue = false,
-
-   Callback = function(Value)
-      Noclip = Value
-   end,
-})
-
-RunService.Stepped:Connect(function()
-
-   if Noclip and LocalPlayer.Character then
-
-      for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-
-         if v:IsA("BasePart") then
-            v.CanCollide = false
-         end
-
-      end
-   end
-end)
-
---====================================================
--- HIDE OTHER PLAYERS
---====================================================
-
-local function SetPlayersVisible(State)
-
-   for _, player in pairs(Players:GetPlayers()) do
-
-      if player ~= LocalPlayer and player.Character then
-
-         for _, v in pairs(player.Character:GetDescendants()) do
-
-            -- BODY
-            if v:IsA("BasePart") then
-               v.LocalTransparencyModifier = State and 1 or 0
-            end
-
-            -- FACE
-            if v:IsA("Decal") then
-               v.Transparency = State and 1 or 0
-            end
-         end
-      end
-   end
-end
-
-RaceTab:CreateToggle({
-   Name = "🙈 Hide Other Players",
-   CurrentValue = false,
-
-   Callback = function(Value)
-
-      HidePlayer = Value
-      SetPlayersVisible(Value)
-
-      Rayfield:Notify({
-         Title = "Hide Players",
-         Content = Value and "Enabled" or "Disabled",
-         Duration = 2,
-      })
-
-   end,
-})
-
--- PLAYER JOIN SUPPORT
-Players.PlayerAdded:Connect(function(player)
-
-   player.CharacterAdded:Connect(function(character)
-
-      task.wait(1)
-
-      if HidePlayer then
-
-         for _, v in pairs(character:GetDescendants()) do
-
-            if v:IsA("BasePart") then
-               v.LocalTransparencyModifier = 1
-            end
-
-            if v:IsA("Decal") then
-               v.Transparency = 1
-            end
-         end
-      end
-   end)
-end)
-
---====================================================
--- REMOVE SHADOW
---====================================================
-
-RaceTab:CreateToggle({
-   Name = "🌑 Remove Shadow",
-   CurrentValue = false,
-
-   Callback = function(Value)
-      Lighting.GlobalShadows = not Value
-   end,
-})
-
---====================================================
--- REMOVE WEATHER
---====================================================
-
-RaceTab:CreateToggle({
-   Name = "🌪️ Remove Weather",
-   CurrentValue = false,
-
-   Callback = function(Value)
-
-      for _, v in pairs(workspace:GetDescendants()) do
-
-         if v:IsA("ParticleEmitter") then
-            v.Enabled = not Value
-         end
-
-      end
-   end,
-})
-
---====================================================
--- FULLBRIGHT
---====================================================
-
-RaceTab:CreateToggle({
-   Name = "💡 FullBright",
-   CurrentValue = false,
-
-   Callback = function(Value)
-
-      if Value then
-
-         Lighting.Brightness = BrightnessValue
-         Lighting.ClockTime = 11
-         Lighting.FogEnd = 100000
-         Lighting.GlobalShadows = false
-
-      else
-
-         Lighting.Brightness = 1
-         Lighting.GlobalShadows = true
-
-      end
-   end,
-})
-
-RaceTab:CreateSlider({
-   Name = "💡 Brightness",
-   Range = {1,10},
-   Increment = 1,
-   CurrentValue = 2,
-
-   Callback = function(Value)
-
-      BrightnessValue = Value
-      Lighting.Brightness = Value
-
-   end,
-})
-
---====================================================
--- ESP
---====================================================
-
-local function CreateESP(player, character)
-    if character:FindFirstChild("RalineESP") then return end
-
-    local highlight = Instance.new("Highlight")
-highlight.Name = "RalineESP"
-highlight.FillTransparency = 0.5
-highlight.OutlineTransparency = 0
-
-if player.Team ~= nil and LocalPlayer.Team ~= nil then
-    if player.Team == LocalPlayer.Team then
-        highlight.FillColor = Color3.fromRGB(0, 170, 255) -- Biru
-        highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
-    else
-        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Merah
-        highlight.OutlineColor = Color3.fromRGB(255, 100, 100)
+-- 💡 FULLBRIGHT
+PlayerTab:CreateSection("💡 Lighting Settings")
+PlayerTab:CreateToggle({
+    Name = "Fullbright",
+    CurrentValue = false,
+    Callback = function(v)
+        Settings.Fullbright.Enabled = v
+        if v then
+            Lighting.Brightness = Settings.Fullbright.Value
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 9e9
+            Lighting.GlobalShadows = false
+            Lighting.Ambient = Color3.new(1,1,1)
+        else
+            Lighting.Brightness = DefaultLighting.Brightness
+            Lighting.ClockTime = DefaultLighting.Time
+            Lighting.FogEnd = DefaultLighting.Fog
+            Lighting.GlobalShadows = DefaultLighting.Shadows
+            Lighting.Ambient = DefaultLighting.Ambient
+        end
     end
-else
-    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-    highlight.OutlineColor = Color3.fromRGB(255, 100, 100)
-end
-
-highlight.Parent = character
-
-    local head = character:FindFirstChild("Head")
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-
-    if head and hrp then
-        local billboard = Instance.new("BillboardGui")
-        billboard.Name = "RalineESP"
-        billboard.Size = UDim2.new(0, 200, 0, 70)
-        billboard.StudsOffset = Vector3.new(0, 3, 0)
-        billboard.AlwaysOnTop = true
-        billboard.Parent = head
-
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.TextScaled = false
-        label.TextSize = 14
-        label.Font = Enum.Font.SourceSansBold
-        label.TextStrokeTransparency = 0
-        label.TextColor3 = Color3.new(1, 1, 1)
-        label.Parent = billboard
-
-        task.spawn(function()
-            while ESPEnabled and character.Parent and billboard.Parent do
-                local vel = hrp.AssemblyLinearVelocity
-
-                local speed = math.floor(
-                    Vector3.new(vel.X, 0, vel.Z).Magnitude
-                )
-
-                local jump = math.floor(vel.Y)
-
-                label.Text =
-                    player.Name ..
-                    "\nSPD: " .. speed ..
-                    " | JMP: " .. jump
-
-                task.wait(0.1)
-            end
-        end)
-    end
-end
-
-RaceTab:CreateToggle({
-   Name = "📦 ESP (Name & Box)",
-   CurrentValue = false,
-
-   Callback = function(Value)
-
-      ESPEnabled = Value
-
-      if Value then
-
-         for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer and player.Character then
-        CreateESP(player, player.Character)
-    end
-end
-
-      else
-
-         for _, v in pairs(workspace:GetDescendants()) do
-
-            if v.Name == "RalineESP" then
-               v:Destroy()
-            end
-
-         end
-      end
-   end,
+})
+PlayerTab:CreateSlider({
+    Name = "Brightness Level",
+    Range = {0.5, 5},
+    Increment = 0.5,
+    CurrentValue = 2,
+    Callback = function(v) Settings.Fullbright.Value = v if Settings.Fullbright.Enabled then Lighting.Brightness = v end end
 })
 
--- PLAYER JOIN ESP
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(char)
-        task.wait(1)
+-- 🙈 PLAYER VISIBILITY
+PlayerTab:CreateSection("🙈 Player Visibility")
 
-        if ESPEnabled then
-            CreateESP(player, char)
+local function SetVisibility(Character, Visible)
+    pcall(function()
+        for _,Obj in pairs(Character:GetDescendants()) do
+            if Obj:IsA("BasePart") then Obj.LocalTransparencyModifier = Visible and 0 or 1 end
+            if Obj:IsA("Decal") then Obj.Transparency = Visible and 0 or 1 end
+            if Obj:IsA("GuiObject") then Obj.Visible = Visible end
         end
     end)
-end)
+end
 
---====================================================
--- UTILITY TAB
---====================================================
-
-local UtilityTab = Window:CreateTab("🛠️ Utility", 4483362458)
-
---====================================================
--- ANTI AFK
---====================================================
-
-UtilityTab:CreateToggle({
-   Name = "🚫 Anti AFK",
-   CurrentValue = false,
-
-   Callback = function(Value)
-      AntiAFK = Value
-   end,
+PlayerTab:CreateToggle({
+    Name = "Hide All Other Players",
+    CurrentValue = false,
+    Callback = function(v)
+        Settings.HidePlayers = v
+        for _,plr in pairs(Players:GetPlayers()) do if plr~=LocalPlayer and plr.Character then SetVisibility(plr.Character, not v) end end
+        Notify("Visibility", v and "Players Hidden" or "Players Visible")
+    end
 })
 
-LocalPlayer.Idled:Connect(function()
+--====================================================
+-- 📦 ESP SYSTEM (UPDATED)
+--====================================================
+PlayerTab:CreateSection("📦 ESP System")
+PlayerTab:CreateToggle({
+    Name = "Aktifkan Semua Esp",
+    CurrentValue = false,
+    Callback = function(v)
+        Settings.ESP.Main = v
+        if not v then 
+            for _,d in pairs(ESPObjects) do d.Highlight.Enabled=false d.Text.Enabled=false end
+        end
+    end
+})
 
-   if AntiAFK then
+PlayerTab:CreateToggle({Name = "Esp Box", CurrentValue = false, Callback = function(v) Settings.ESP.Box = v end})
+PlayerTab:CreateToggle({Name = "Esp Name", CurrentValue = false, Callback = function(v) Settings.ESP.Name = v end})
+PlayerTab:CreateToggle({Name = "Esp Distance", CurrentValue = false, Callback = function(v) Settings.ESP.Distance = v end})
+PlayerTab:CreateToggle({Name = "Esp Team Color", CurrentValue = false, Callback = function(v) Settings.ESP.TeamColor = v end})
+PlayerTab:CreateToggle({Name = "Esp Speed & Jump", CurrentValue = false, Callback = function(v) Settings.ESP.SpeedJump = v end}) -- Pengganti Motion Info
 
-      VirtualUser:CaptureController()
-      VirtualUser:ClickButton2(Vector2.new())
+-- FITUR BARU: URAIAN UKURAN TULISAN
+PlayerTab:CreateSlider({
+    Name = "Esp Text Size",
+    Range = {10, 30},
+    Increment = 1,
+    CurrentValue = 14,
+    Callback = function(v) 
+        Settings.ESP.TextSize = v
+        -- Update ukuran langsung untuk ESP yang sudah ada
+        for _, Data in pairs(ESPObjects) do
+            if Data.Label then Data.Label.TextSize = v end
+        end
+    end
+})
 
-   end
+-- Create ESP Elements
+local function CreateESP(PlayerObj)
+    if PlayerObj == LocalPlayer then return end
+    local function Setup(Char)
+        pcall(function()
+            if ESPObjects[PlayerObj] then for _,l in pairs(ESPObjects[PlayerObj]) do l:Destroy() end end
+            local Head = Char:FindFirstChild("Head")
+            local HRP = Char:FindFirstChild("HumanoidRootPart")
+            if not Head or not HRP then return end
+
+            -- Highlight Box
+            local Highlight = Instance.new("Highlight", Char)
+            Highlight.Name = "ESP_Raline"
+            Highlight.FillTransparency = 0.5
+            Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+            -- Text UI
+            local UI = Instance.new("BillboardGui", Head)
+            UI.AlwaysOnTop = true
+            UI.Size = UDim2.new(0,200,0,50)
+            UI.StudsOffset = Vector3.new(0,2,0)
+            local Label = Instance.new("TextLabel", UI)
+            Label.BackgroundTransparency = 1
+            Label.Size = UDim2.new(1,0,1,0)
+            Label.Font = Enum.Font.GothamBold
+            -- Ubah TextScaled jadi false agar kita bisa kontrol TextSize
+            Label.TextScaled = false 
+            Label.TextSize = Settings.ESP.TextSize 
+            Label.TextStrokeTransparency = 0
+
+            ESPObjects[PlayerObj] = {Highlight=Highlight, Text=UI, Label=Label}
+        end)
+    end
+    if PlayerObj.Character then Setup(PlayerObj.Character) end
+    PlayerObj.CharacterAdded:Connect(Setup)
+end
+for _,v in pairs(Players:GetPlayers()) do CreateESP(v) end
+Players.PlayerAdded:Connect(CreateESP)
+
+--====================================================
+-- 🗑️ VISUAL HIDE SYSTEM (UPDATED)
+--====================================================
+PlayerTab:CreateSection("🗑️ Visual Hiding Only")
+
+-- Function to Handle Particle/Effect Hiding
+local function UpdateParticleVisibility()
+    -- Atmosphere & Clouds
+    local Atm = Lighting:FindFirstChild("Atmosphere")
+    if Atm then Atm.Density = Settings.HideParticles and 0 or 0.3 end -- Default density approx
+    
+    local Cld = Lighting:FindFirstChild("Clouds")
+    if Cld then Cld.Cover = Settings.HideParticles and 0 or 0.5 end
+
+    -- Global Shadows
+    if Settings.HideParticles then Lighting.GlobalShadows = false else Lighting.GlobalShadows = true end
+
+    -- Iterate Workspace for Particles/Trails
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") then
+            obj.Enabled = not Settings.HideParticles
+        end
+        if obj:IsA("PointLight") or obj:IsA("SpotLight") then
+            obj.Enabled = not Settings.HideParticles
+        end
+    end
+end
+
+-- Function to Handle Vehicle/Object Hiding (Visual Only)
+local function UpdateVehicleVisibility()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        -- Kita gunakan LocalTransparencyModifier agar client-side only
+        if obj:IsA("BasePart") then
+            -- Cek apakah bagian ini adalah bagian dari Karakter Player
+            local isPlayerPart = obj:IsDescendantOf(Character)
+            
+            if not isPlayerPart then
+                -- Jika HideVehicles aktif, buat transparan total (1)
+                -- Jika tidak aktif, kembalikan ke 0
+                obj.LocalTransparencyModifier = Settings.HideVehicles and 1 or 0
+            end
+        end
+    end
+end
+
+-- Toggle Partikel/Shadow
+PlayerTab:CreateToggle({
+    Name = "Hide All Particles & Shadow",
+    CurrentValue = false,
+    Callback = function(v)
+        Settings.HideParticles = v
+        UpdateParticleVisibility()
+        Notify("Visual", v and "Particles & Shadow Hidden" or "Visuals Restored")
+    end
+})
+
+-- Toggle Kendaraan/Objek (Visual Only)
+PlayerTab:CreateToggle({
+    Name = "Hide Vehicles / Objects (Visual)",
+    CurrentValue = false,
+    Callback = function(v)
+        Settings.HideVehicles = v
+        UpdateVehicleVisibility()
+        Notify("Visual", v and "Objects Invisible (Ghost Mode)" or "Objects Visible")
+    end
+})
+
+-- Listener untuk object baru yang spawn (agar otomatis hilang jika toggle aktif)
+Workspace.DescendantAdded:Connect(function(obj)
+    if Settings.HideParticles then
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("PointLight") or obj:IsA("SpotLight") then
+            obj.Enabled = false
+        end
+        if obj:IsA("Atmosphere") then obj.Density = 0 end
+        if obj:IsA("Clouds") then obj.Cover = 0 end
+    end
+
+    if Settings.HideVehicles then
+        if obj:IsA("BasePart") and not obj:IsDescendantOf(Character) then
+            obj.LocalTransparencyModifier = 1
+        end
+    end
 end)
 
---====================================================
--- AUTO RESPAWN
---====================================================
+-- 🏃 SPECIAL MOVEMENT
+PlayerTab:CreateSection("🏃 Special Movement")
+PlayerTab:CreateToggle({Name = "Infinite Jump", CurrentValue = false, Callback = function(v) Settings.InfiniteJump = v end})
+PlayerTab:CreateToggle({Name = "Noclip", CurrentValue = false, Callback = function(v) Settings.Noclip = v end})
 
-UtilityTab:CreateToggle({
-   Name = "🔄 Auto Respawn",
-   CurrentValue = false,
-
-   Callback = function(Value)
-
-      if Value then
-
-         LocalPlayer.CharacterAdded:Connect(function()
-
-            Rayfield:Notify({
-               Title = "Respawned",
-               Content = "Character Respawned Successfully",
-               Duration = 3,
-            })
-
-         end)
-      end
-   end,
+-- 📷 CAMERA SETTINGS
+PlayerTab:CreateSection("📷 Camera Settings")
+PlayerTab:CreateToggle({Name = "Enable Custom Zoom", CurrentValue = false, Callback = function(v) Settings.Camera.Enabled = v end})
+PlayerTab:CreateSlider({
+    Name = "Zoom Distance Value",
+    Range = {70, 150},
+    Increment = 5,
+    CurrentValue = 70,
+    Callback = function(v) Settings.Camera.Value = v if Settings.Camera.Enabled then LocalPlayer.CameraMaxZoomDistance=v end end
 })
+PlayerTab:CreateToggle({Name = "Show Crosshair", CurrentValue = false, Callback = function(v) Settings.Crosshair = v end})
+
+-- Infinite Jump Detection
+UserInputService.JumpRequest:Connect(function() if Settings.InfiniteJump and Humanoid then Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end)
+
+-- Crosshair Drawing
+local CrosshairUI = Instance.new("ScreenGui", game.CoreGui)
+CrosshairUI.Name = "Raline_Cross"
+CrosshairUI.Enabled = true
+local function DrawLine(Size, Pos)
+    local f = Instance.new("Frame", CrosshairUI)
+    f.BackgroundColor3=Color3.new(1,1,1)
+    f.BorderSizePixel=0
+    f.AnchorPoint=Vector2.new(0.5,0.5)
+    f.Size=Size
+    f.Position=Pos
+    f.Visible=false
+    return f
+end
+local Crosshair = {
+    DrawLine(UDim2.new(0,2,0,12), UDim2.new(0.5,0,0.5,-10)),
+    DrawLine(UDim2.new(0,2,0,12), UDim2.new(0.5,0,0.5,10)),
+    DrawLine(UDim2.new(0,12,0,2), UDim2.new(0.5,-10,0.5,0)),
+    DrawLine(UDim2.new(0,12,0,2), UDim2.new(0.5,10,0.5,0))
+}
+
+--====================================================
+-- 🔄 MAIN SYSTEM LOOP
+--====================================================
+local LastTime = tick()
+local FrameCount = 0
+
+RunService.RenderStepped:Connect(function()
+    -- FPS Counter
+    local currentTime = tick()
+    FrameCount = FrameCount + 1
+    if currentTime - LastTime >= 1 then
+        local fps = math.floor(FrameCount / (currentTime - LastTime))
+        local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        FPS_Display:Set({Title = "FPS", Content = tostring(fps)})
+        Ping_Display:Set({Title = "Ping", Content = tostring(ping).." ms"})
+        LastTime = currentTime
+        FrameCount = 0
+    end
+
+    if not Character or not Humanoid or not RootPart then return end
+
+    -- 🚀 SPEED & JUMP LOGIC
+    pcall(function()
+        Humanoid.WalkSpeed = Settings.Speed.Enabled and Settings.Speed.Value or 16
+        Humanoid.JumpPower = Settings.Jump.Enabled and Settings.Jump.Value or 50
+    end)
+
+    -- 👻 NOCLIP LOGIC
+    if Settings.Noclip then
+        pcall(function() for _,b in pairs(Character:GetDescendants()) do if b:IsA("BasePart") then b.CanCollide=false end end end)
+    end
+
+    -- 📷 CAMERA LOGIC
+    if Settings.Camera.Enabled then LocalPlayer.CameraMaxZoomDistance = Settings.Camera.Value end
+
+    -- 🎯 CROSSHAIR LOGIC
+    for _,g in pairs(Crosshair) do g.Visible = Settings.Crosshair end
+
+    -- 📦 ESP LOGIC
+    if Settings.ESP.Main then
+        for PlayerObj, Data in pairs(ESPObjects) do
+            pcall(function()
+                local TargetChar = PlayerObj.Character
+                if not TargetChar or not TargetChar:FindFirstChild("HumanoidRootPart") then Data.Highlight.Enabled=false Data.Text.Enabled=false return end
+                local TargetHRP = TargetChar.HumanoidRootPart
+
+                -- Calculate Real-Time Data
+                local Distance = math.floor((RootPart.Position - TargetHRP.Position).Magnitude)
+                local RealSpeed = math.floor(Vector3.new(TargetHRP.Velocity.X,0,TargetHRP.Velocity.Z).Magnitude)
+                local RealJump = math.floor(TargetHRP.Velocity.Y)
+
+                -- 🎨 COLOR RULES
+                if Settings.ESP.TeamColor and PlayerObj.Team and LocalPlayer.Team then
+                    if PlayerObj.Team == LocalPlayer.Team then
+                        Data.Highlight.OutlineColor = Color3.fromRGB(0, 150, 255)
+                        Data.Label.TextColor3 = Color3.fromRGB(0, 200, 255)
+                    else
+                        Data.Highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                        Data.Label.TextColor3 = Color3.fromRGB(255, 80, 80)
+                    end
+                else
+                    Data.Highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+                    Data.Label.TextColor3 = Color3.fromRGB(255, 255, 0)
+                end
+
+                -- ✅ ENABLE FEATURES
+                Data.Highlight.Enabled = Settings.ESP.Box
+                Data.Text.Enabled = Settings.ESP.Name or Settings.ESP.Distance or Settings.ESP.SpeedJump
+
+                -- 📝 BUILD TEXT
+                local Text = ""
+                if Settings.ESP.Name then Text = Text..PlayerObj.Name.." " end
+                if Settings.ESP.Distance then Text = Text.."| "..Distance.."m " end
+                if Settings.ESP.SpeedJump then Text = Text.."| SPD:"..RealSpeed.." JMP:"..RealJump end
+
+                Data.Label.Text = Text
+                -- Update TextSize secara real-time
+                Data.Label.TextSize = Settings.ESP.TextSize
+            end)
+        end
+    else
+        for _,Data in pairs(ESPObjects) do pcall(function() Data.Highlight.Enabled=false Data.Text.Enabled=false end) end
+    end
+
+end)
