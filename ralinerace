@@ -1,8 +1,6 @@
 --====================================================
--- 🇮🇩 ADMIN ANDALANA RALINE | PANDERA INDONESIA
--- ✔ VISUAL HIDE: DEEP SCAN SEAT LOGIC
--- ✔ ESP WITH TEXT SIZE & SPEED/JUMP
--- ✔ FPS & Ping Working Perfectly
+-- 🇮🇩 ADMIN ABSOLUTE COUNTER | RALINE 🔥
+-- ✔ SCRIPT v.1.05
 --====================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -57,7 +55,7 @@ local Settings = {
     },
 
     HideParticles = false,
-    HideVehicles = false, -- Deep Scan Mode
+    HideVehicles = false, -- Mode: Hide all EXCEPT mine
     InfiniteJump = false,
     Noclip = false,
 
@@ -82,7 +80,7 @@ local DefaultLighting = {
 local Window = Rayfield:CreateWindow({
    Name = "🇮🇩 Admin Andalana Raline | Pandera Indonesia",
    LoadingTitle = "🚀 System Loading",
-   LoadingSubtitle = "Deep Scan Vehicle Hide",
+   LoadingSubtitle = "My Car Visible Only",
    ConfigurationSaving = {Enabled = true, FolderName = "RalineData", FileName = "Settings"},
    Discord = {Enabled = false},
    KeySystem = false
@@ -311,16 +309,13 @@ for _,v in pairs(Players:GetPlayers()) do CreateESP(v) end
 Players.PlayerAdded:Connect(CreateESP)
 
 --====================================================
--- 🗑️ VISUAL HIDE SYSTEM (FIXED DEEP SCAN)
+-- 🗑️ VISUAL HIDE SYSTEM (SMART OCCUPANT LOGIC)
 --====================================================
 PlayerTab:CreateSection("🗑️ Visual Hiding Only")
 
 -- Function: Cek apakah Model ini kendaraan (Deep Scan Seat)
-local function IsVehicle(Model)
-    if Model:FindFirstChildOfClass("VehicleSeat") or Model:FindFirstChildOfClass("Seat") then
-        return true
-    end
-    return false
+local function GetVehicleSeat(Model)
+    return Model:FindFirstChildOfClass("VehicleSeat") or Model:FindFirstChildOfClass("Seat")
 end
 
 -- Function: Set transparansi model
@@ -352,18 +347,31 @@ local function UpdateParticleVisibility()
     end
 end
 
--- Function: Handle Vehicles (Deep Scan + Pindai Semua Model di Workspace)
+-- Variable untuk menyimpan referensi kendaraan agar tidak scan ulang terus menerus
+local KnownVehicles = {}
+
+-- Function: Handle Vehicles (Check Occupant)
 local function UpdateVehicleVisibility()
-    -- Kita scan SEMUA Model yang ada di Workspace (termasuk yang ada di dalam folder)
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") then
-            -- Abaikan Karakter Player
-            if obj ~= Character then
-                -- Deep Scan: Cek apakah ada Seat di dalam model ini
-                if IsVehicle(obj) then
-                    SetModelTransparency(obj, Settings.HideVehicles)
+    for model, seat in pairs(KnownVehicles) do
+        if model and model.Parent and seat and seat.Parent then
+            local shouldHide = false
+            
+            if Settings.HideVehicles then
+                -- Default: Sembunyikan
+                shouldHide = true
+                
+                -- Exception: Jika saya yang duduk (Occupant adalah Humanoid saya)
+                if seat.Occupant then
+                    if seat.Occupant.Parent == Character then
+                        shouldHide = false -- Tampilkan jika saya yang pakai
+                    end
                 end
             end
+            
+            SetModelTransparency(model, shouldHide)
+        else
+            -- Hapus dari cache jika sudah tidak ada
+            KnownVehicles[model] = nil
         end
     end
 end
@@ -379,20 +387,20 @@ PlayerTab:CreateToggle({
     end
 })
 
--- Toggle Kendaraan (Deep Scan Mode)
+-- Toggle Kendaraan (Smart Mode)
 PlayerTab:CreateToggle({
-    Name = "Hide Spawned Vehicles (Deep Scan)",
+    Name = "Hide Others' Vehicles (Mine Visible)",
     CurrentValue = false,
     Callback = function(v)
         Settings.HideVehicles = v
         UpdateVehicleVisibility()
-        Notify("Visual", v and "Scanning & Hiding Vehicles..." or "Vehicles Visible")
+        Notify("Visual", v and "Smart Hiding Active" or "Vehicles Visible")
     end
 })
 
--- Listener Object Baru
+-- Listener untuk Object Baru
 Workspace.DescendantAdded:Connect(function(obj)
-    -- 1. Handle Particles
+    -- Handle Particles
     if Settings.HideParticles then
         if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("PointLight") or obj:IsA("SpotLight") then
             obj.Enabled = false
@@ -401,27 +409,41 @@ Workspace.DescendantAdded:Connect(function(obj)
         if obj:IsA("Clouds") then obj.Cover = 0 end
     end
 
-    -- 2. Handle Vehicles (Jika objek yang ditambahkan adalah Model)
+    -- Handle Vehicles (Deteksi Baru)
+    -- Jika objek adalah Model dan punya Seat
     if obj:IsA("Model") and obj ~= Character then
-        if Settings.HideVehicles then
-            -- Cek langsung apakah model baru ini adalah kendaraan
-            if IsVehicle(obj) then
-                SetModelTransparency(obj, true)
+        local seat = GetVehicleSeat(obj)
+        if seat then
+            KnownVehicles[obj] = seat
+            
+            -- Terapkan visibilitas langsung
+            if Settings.HideVehicles then
+                SetModelTransparency(obj, true) -- Default hidden
             end
         end
     end
     
-    -- 3. Handle Vehicles (Jika objek yang ditambahkan adalah Seat di dalam model yang sudah ada)
-    -- Kadang seat ditambahkan belakangan
+    -- Jika objek adalah Seat yang ditambahkan ke Model yang sudah ada
     if obj:IsA("VehicleSeat") or obj:IsA("Seat") then
-        if Settings.HideVehicles then
-            local ParentModel = obj:FindFirstAncestorOfClass("Model")
-            if ParentModel and ParentModel ~= Character then
-                SetModelTransparency(ParentModel, true)
+        local parentModel = obj:FindFirstAncestorOfClass("Model")
+        if parentModel and parentModel ~= Character and not KnownVehicles[parentModel] then
+            KnownVehicles[parentModel] = obj
+            if Settings.HideVehicles then
+                SetModelTransparency(parentModel, true)
             end
         end
     end
 end)
+
+-- Scan awal saat script mulai
+for _, obj in pairs(Workspace:GetDescendants()) do
+    if obj:IsA("Model") and obj ~= Character then
+        local seat = GetVehicleSeat(obj)
+        if seat then
+            KnownVehicles[obj] = seat
+        end
+    end
+end
 
 -- 🏃 SPECIAL MOVEMENT
 PlayerTab:CreateSection("🏃 Special Movement")
@@ -471,6 +493,7 @@ local LastTime = tick()
 local FrameCount = 0
 
 RunService.RenderStepped:Connect(function()
+    -- FPS Counter
     local currentTime = tick()
     FrameCount = FrameCount + 1
     if currentTime - LastTime >= 1 then
@@ -480,6 +503,12 @@ RunService.RenderStepped:Connect(function()
         Ping_Display:Set({Title = "Ping", Content = tostring(ping).." ms"})
         LastTime = currentTime
         FrameCount = 0
+    end
+
+    -- Vehicle Visibility Check (Realtime)
+    -- Kita cek setiap frame siapa yang duduk, supaya saat Anda masuk mobil, langsung muncul
+    if Settings.HideVehicles then
+        UpdateVehicleVisibility()
     end
 
     if not Character or not Humanoid or not RootPart then return end
