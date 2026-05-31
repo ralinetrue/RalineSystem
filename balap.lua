@@ -68,13 +68,13 @@ MainTab:CreateToggle({
     CurrentValue = false,
     Callback = function(v) 
         Settings.Jump = v 
-        Humanoid.JumpPower = v and Settings.JumpVal or 51
+        Humanoid.JumpPower = v and Settings.JumpVal or 51.5
     end
 })
 
 MainTab:CreateSlider({
     Name = "Jump Value",
-    Range = {51, 75}, Increment = 0.5, CurrentValue = 51,
+    Range = {51.5, 75}, Increment = 0.5, CurrentValue = 51.5,
     Callback = function(v) 
         Settings.JumpVal = v 
         if Settings.Jump then Humanoid.JumpPower = v end
@@ -197,7 +197,7 @@ MainTab:CreateButton({
     Name = "❌ Destroy & Reset Script",
     Callback = function()
         -- Reset ke default
-        Humanoid.WalkSpeed = 17; Humanoid.JumpPower = 51
+        Humanoid.WalkSpeed = 17; Humanoid.JumpPower = 51.55
         Lighting.Brightness = 2; Lighting.ClockTime = 14
         Lighting.FogEnd = 1000; Lighting.GlobalShadows = true
         Lighting.Ambient = Color3.new(0.5,0.5,0.5)
