@@ -23,9 +23,33 @@ end)
 
 local Settings = {
     Speed = false, Jump = false, SpeedVal = 17, JumpVal = 51.5,
-    Bright = false, Dark = false, HidePlayers = false, 
+    Bright = false, HidePlayers = false, 
     CleanVisuals = false, Boost = false
 }
+
+-- Variabel untuk koneksi event lighting
+local ComfortLightingConn = nil
+
+-- Fungsi pintar untuk Auto Brightness
+local function ApplyComfortLighting()
+    if not Settings.Bright then return end
+    
+    -- Cek apakah siang atau malam berdasarkan ClockTime game
+    -- 6 hingga 18 dianggap siang, sisanya malam
+    if Lighting.ClockTime >= 6 and Lighting.ClockTime <= 18 then
+        -- SIANG: Dibuat sedikit redup/gelap agar enak dipandang (Anti-Silau)
+        Lighting.Brightness = 1
+        Lighting.Ambient = Color3.fromRGB(140, 140, 140)
+        Lighting.GlobalShadows = true
+        Lighting.FogEnd = 1000
+    else
+        -- MALAM: Diterangkan agar bisa melihat
+        Lighting.Brightness = 2
+        Lighting.Ambient = Color3.fromRGB(180, 180, 180)
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 10000
+    end
+end
 
 --====================================================
 -- 🖥️ UI SETUP
@@ -94,50 +118,28 @@ end)
 --====================================================
 MainTab:CreateSection("👁️ Visuals & Hiding")
 
--- FULL BRIGHTNESS
-ToggleBright = MainTab:CreateToggle({
-    Name = "💡 Full Brightness",
+-- AUTO COMFORT BRIGHTNESS (Pengganti Full Bright & Dark Mode)
+MainTab:CreateToggle({
+    Name = "👁️ Auto Comfort Brightness",
     CurrentValue = false,
     Callback = function(v)
         Settings.Bright = v
         if v then
-            if Settings.Dark then ToggleDark:Set(false) end -- Matikan Dark Mode
-            Lighting.Brightness = 3
-            Lighting.ClockTime = 14
-            Lighting.FogEnd = 9e9
-            Lighting.GlobalShadows = false
-            Lighting.Ambient = Color3.new(1,1,1)
+            -- Terapkan sekali saat dinyalakan
+            ApplyComfortLighting()
+            -- Hubungkan ke perubahan waktu game (Siang/Malam otomatis)
+            ComfortLightingConn = Lighting:GetPropertyChangedSignal("ClockTime"):Connect(ApplyComfortLighting)
         else
-            -- Kembalikan ke default
+            -- Putuskan koneksi saat dimatikan
+            if ComfortLightingConn then
+                ComfortLightingConn:Disconnect()
+                ComfortLightingConn = nil
+            end
+            -- Kembalikan ke default game
             Lighting.Brightness = 2
-            Lighting.ClockTime = 14
             Lighting.FogEnd = 1000
             Lighting.GlobalShadows = true
-            Lighting.Ambient = Color3.new(0.5,0.5,0.5)
-        end
-    end
-})
-
--- DARK MODE (MINUS BRIGHTNESS)
-ToggleDark = MainTab:CreateToggle({
-    Name = "🌙 Dark Mode (Gelap)",
-    CurrentValue = false,
-    Callback = function(v)
-        Settings.Dark = v
-        if v then
-            if Settings.Bright then ToggleBright:Set(false) end -- Matikan Brightness
-            Lighting.Brightness = -1      -- Brightness Minus di sini
-            Lighting.ClockTime = 0        -- Malam hari
-            Lighting.FogEnd = 1000
-            Lighting.GlobalShadows = true -- Bayangan dinyalakan agar gelap
-            Lighting.Ambient = Color3.new(0.1, 0.1, 0.1) -- Ambient sangat redup
-        else
-            -- Kembalikan ke default
-            Lighting.Brightness = 2
-            Lighting.ClockTime = 14
-            Lighting.FogEnd = 1000
-            Lighting.GlobalShadows = true
-            Lighting.Ambient = Color3.new(0.5,0.5,0.5)
+            Lighting.Ambient = Color3.fromRGB(128, 128, 128)
         end
     end
 })
@@ -200,8 +202,11 @@ MainTab:CreateButton({
         Humanoid.WalkSpeed = 17; Humanoid.JumpPower = 51.55
         Lighting.Brightness = 2; Lighting.ClockTime = 14
         Lighting.FogEnd = 1000; Lighting.GlobalShadows = true
-        Lighting.Ambient = Color3.new(0.5,0.5,0.5)
+        Lighting.Ambient = Color3.fromRGB(128, 128, 128)
         settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+        
+        -- Putuskan event lighting
+        if ComfortLightingConn then ComfortLightingConn:Disconnect() end
         
         -- Tampilkan pemain kembali
         for _, plr in pairs(Players:GetPlayers()) do
